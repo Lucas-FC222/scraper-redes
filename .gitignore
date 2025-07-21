@@ -36,6 +36,7 @@ TestResults/
 /.tools/
 
 # Secret configs
+appsettings.*.json
 appsettings.Development.json
 appsettings.Local.json
 appsettings.*.local.json
