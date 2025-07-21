@@ -1,0 +1,58 @@
+# Build results
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# Rider
+.idea/
+*.sln.iml
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Publish outputs
+publish/
+
+# Test results
+TestResults/
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Dotnet tools
+/.tools/
+
+# Secret configs
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.local.json
+secrets.json
+
+# Others
+*.dbmdl
+*.bak
+*.mdf
+*.ldf
+*.sqlite
+*.sqlitedb
+
+# Snapshots/IDE Copilot
+.vs/
+.vsconfig
+
+# Ignore local data
+CrowlerDB.mdf
+CrowlerDB_log.ldf 
