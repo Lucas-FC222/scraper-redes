@@ -9,12 +9,15 @@ namespace Services
         private readonly IApiFyService _apiFyService;
         private readonly IInstagramRepository _instagramRepository;
         private readonly ILogger<InstagramService> _logger;
+        private readonly IPostClassifierService _postClassifierService;
 
-        public InstagramService(IApiFyService apiFyService, IInstagramRepository instagramRepository, ILogger<InstagramService> logger)
+        public InstagramService(IApiFyService apiFyService, IInstagramRepository instagramRepository, ILogger<InstagramService> logger, IPostClassifierService postClassifierService)
         {
             _apiFyService = apiFyService;
             _instagramRepository = instagramRepository;
             _logger = logger;
+            _postClassifierService = postClassifierService;
+
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -64,6 +67,12 @@ namespace Services
                 }
                 
                 _logger.LogInformation("Salvando {PostsCount} posts no banco de dados", dataResult.Posts.Count());
+
+                foreach (var post in dataResult.Posts)
+                {
+                    post.Topic = await _postClassifierService.ClassifyPostAsync(post.Caption ?? "");
+                }
+
                 await _instagramRepository.SavePostsAsync(dataResult.Posts);
                 
                 // Salvar comentários, hashtags e menções

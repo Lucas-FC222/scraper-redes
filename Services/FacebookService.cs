@@ -9,12 +9,15 @@ namespace Services
         private readonly IApiFyService _apiFyService;
         private readonly IFacebookRepository _facebookRepository;
         private readonly ILogger<FacebookService> _logger;
+        private readonly IPostClassifierService _postClassifierService;
 
-        public FacebookService(IApiFyService apiFyService, IFacebookRepository facebookRepository, ILogger<FacebookService> logger)
+        public FacebookService(IApiFyService apiFyService, IFacebookRepository facebookRepository, ILogger<FacebookService> logger, IPostClassifierService postClassifierService)
         {
             _apiFyService = apiFyService;
             _facebookRepository = facebookRepository;
             _logger = logger;
+            _postClassifierService = postClassifierService;
+
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -76,6 +79,11 @@ namespace Services
                     .GroupBy(p => p.Id)
                     .Select(g => g.First())
                     .ToList();
+
+                foreach (var post in postsUnicos)
+                {
+                    post.Topic = await _postClassifierService.ClassifyPostAsync(post.Message ?? "");
+                }
 
                 await _facebookRepository.SavePostsAsync(postsUnicos);
                 _logger.LogInformation("{Count} posts do Facebook salvos com sucesso", postsUnicos.Count);

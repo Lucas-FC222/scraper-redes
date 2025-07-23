@@ -20,11 +20,13 @@ builder.Services.AddHttpClient();
 // Repositórios
 builder.Services.AddScoped<IInstagramRepository, InstagramRepository>();
 builder.Services.AddScoped<IFacebookRepository, FacebookRepository>();
+//builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 
 // Serviços
 builder.Services.AddScoped<IApiFyService, ApiFyService>();
 builder.Services.AddScoped<IInstagramService, InstagramService>();
 builder.Services.AddScoped<IFacebookService, FacebookService>();
+builder.Services.AddScoped<IPostClassifierService, PostClassifierService>();
 
 // CORS - Permitir requisições do frontend
 builder.Services.AddCors(options =>
