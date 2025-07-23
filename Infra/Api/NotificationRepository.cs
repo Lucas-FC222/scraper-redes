@@ -91,5 +91,96 @@ namespace Infra
             await _connection.CloseAsync();
             return ids;
         }
+
+        public async Task<IEnumerable<SentNotification>> GetUserNotificationsAsync(Guid userId, bool includeRead = false)
+        {
+            var sql = @"
+                SELECT NotificationId, UserId, PostId, SentAt, IsRead
+                FROM SentNotifications
+                WHERE UserId = @UserId";
+
+            if (!includeRead)
+            {
+                sql += " AND IsRead = 0";
+            }
+
+            sql += " ORDER BY SentAt DESC";
+
+            await _connection.OpenAsync();
+            var notifications = await _connection.QueryAsync<SentNotification>(sql, new { UserId = userId });
+            await _connection.CloseAsync();
+
+            _logger.LogInformation("GetUserNotificationsAsync({UserId}): {Count} notificações",
+                userId, notifications.Count());
+            return notifications;
+        }
+
+        public async Task UpdatePreferencesAsync(Guid userId, string[] topics)
+        {
+            const string deleteSql = @"
+                DELETE FROM UserTopicPreferences
+                WHERE UserId = @UserId";
+
+            const string insertSql = @"
+                INSERT INTO UserTopicPreferences (UserId, Topic)
+                VALUES (@UserId, @Topic)";
+
+            await _connection.OpenAsync();
+            using var tx = _connection.BeginTransaction();
+            try
+            {
+                await _connection.ExecuteAsync(deleteSql, new { UserId = userId }, tx);
+
+                foreach (var topic in topics)
+                {
+                    await _connection.ExecuteAsync(insertSql, new { UserId = userId, Topic = topic }, tx);
+                }
+
+                tx.Commit();
+                _logger.LogInformation("UpdatePreferencesAsync({UserId}): atualizados {Count} tópicos",
+                    userId, topics.Length);
+            }
+            catch
+            {
+                tx.Rollback();
+                throw;
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
+        public async Task MarkAsReadAsync(Guid userId, Guid notificationId)
+        {
+            const string sql = @"
+                UPDATE SentNotifications
+                SET IsRead = 1
+                WHERE UserId = @UserId
+                AND NotificationId = @NotificationId";
+
+            await _connection.OpenAsync();
+            var affected = await _connection.ExecuteAsync(sql, new { UserId = userId, NotificationId = notificationId });
+            await _connection.CloseAsync();
+
+            _logger.LogInformation("MarkAsReadAsync({UserId}, {NotificationId}): {Affected} registros atualizados",
+                userId, notificationId, affected);
+        }
+
+        public async Task MarkAllAsReadAsync(Guid userId)
+        {
+            const string sql = @"
+                UPDATE SentNotifications
+                SET IsRead = 1
+                WHERE UserId = @UserId
+                AND IsRead = 0";
+
+            await _connection.OpenAsync();
+            var affected = await _connection.ExecuteAsync(sql, new { UserId = userId });
+            await _connection.CloseAsync();
+
+            _logger.LogInformation("MarkAllAsReadAsync({UserId}): {Affected} registros atualizados",
+                userId, affected);
+        }
     }
 }

@@ -10,6 +10,7 @@ namespace Infra.Data
         Task SaveMentionsAsync(IEnumerable<InstagramMention> mentions);
         Task<IEnumerable<InstagramPost>> GetAllPostsAsync();
         Task<InstagramPost?> GetPostByIdAsync(string id);
+        Task<IEnumerable<InstagramPost>> GetPostsByIdsAsync(IEnumerable<string> ids);
         Task<IEnumerable<InstagramComment>> GetCommentsByPostIdAsync(string postId);
         Task<IEnumerable<InstagramHashtag>> GetHashtagsByPostIdAsync(string postId);
         Task<IEnumerable<InstagramMention>> GetMentionsByPostIdAsync(string postId);
