@@ -68,8 +68,8 @@ namespace Infra.Data
 
                 _logger.LogInformation("Iniciando salvamento de {Count} novos posts no banco de dados", newPosts.Count);
                 const string insertSql = @"
-            INSERT INTO InstagramPosts (Id, Type, ShortCode, Caption, Url, CommentsCount, DimensionsHeight, DimensionsWidth, DisplayUrl, Images, VideoUrl, Alt, LikesCount, VideoViewCount, VideoPlayCount, Timestamp, ChildPosts, OwnerFullName, OwnerUsername, OwnerId, ProductType, VideoDuration, IsSponsored, TaggedUsers, MusicInfo, CoauthorProducers, IsCommentsDisabled, InputUrl, CreatedAt, Topic)
-            VALUES (@Id, @Type, @ShortCode, @Caption, @Url, @CommentsCount, @DimensionsHeight, @DimensionsWidth, @DisplayUrl, @Images, @VideoUrl, @Alt, @LikesCount, @VideoViewCount, @VideoPlayCount, @Timestamp, @ChildPosts, @OwnerFullName, @OwnerUsername, @OwnerId, @ProductType, @VideoDuration, @IsSponsored, @TaggedUsers, @MusicInfo, @CoauthorProducers, @IsCommentsDisabled, @InputUrl, @CreatedAt, @Topic)";
+                    INSERT INTO InstagramPosts (Id, Type, ShortCode, Caption, Url, CommentsCount, DimensionsHeight, DimensionsWidth, DisplayUrl, Images, VideoUrl, Alt, LikesCount, VideoViewCount, VideoPlayCount, Timestamp, ChildPosts, OwnerFullName, OwnerUsername, OwnerId, ProductType, VideoDuration, IsSponsored, TaggedUsers, MusicInfo, CoauthorProducers, IsCommentsDisabled, InputUrl, CreatedAt, Topic)
+                    VALUES (@Id, @Type, @ShortCode, @Caption, @Url, @CommentsCount, @DimensionsHeight, @DimensionsWidth, @DisplayUrl, @Images, @VideoUrl, @Alt, @LikesCount, @VideoViewCount, @VideoPlayCount, @Timestamp, @ChildPosts, @OwnerFullName, @OwnerUsername, @OwnerId, @ProductType, @VideoDuration, @IsSponsored, @TaggedUsers, @MusicInfo, @CoauthorProducers, @IsCommentsDisabled, @InputUrl, @CreatedAt, @Topic)";
 
                 using var tx = _connection.BeginTransaction();
                 var rowsAffected = await _connection.ExecuteAsync(insertSql, newPosts, transaction: tx);
@@ -202,8 +202,8 @@ namespace Infra.Data
 
                 _logger.LogInformation("Iniciando salvamento de {Count} novos comentários no banco de dados", newComments.Count);
                 const string insertSql = @"
-            INSERT INTO InstagramComments (Id, PostId, Text, OwnerUsername, OwnerId, OwnerProfilePicUrl, Timestamp, RepliesCount, LikesCount, Replies, CreatedAt)
-            VALUES (@Id, @PostId, @Text, @OwnerUsername, @OwnerId, @OwnerProfilePicUrl, @Timestamp, @RepliesCount, @LikesCount, @Replies, @CreatedAt)";
+                    INSERT INTO InstagramComments (Id, PostId, Text, OwnerUsername, OwnerId, OwnerProfilePicUrl, Timestamp, RepliesCount, LikesCount, Replies, CreatedAt)
+                    VALUES (@Id, @PostId, @Text, @OwnerUsername, @OwnerId, @OwnerProfilePicUrl, @Timestamp, @RepliesCount, @LikesCount, @Replies, @CreatedAt)";
 
                 using var tx = _connection.BeginTransaction();
                 var rowsAffected = await _connection.ExecuteAsync(insertSql, newComments, transaction: tx);
@@ -255,8 +255,8 @@ namespace Infra.Data
 
                 _logger.LogInformation("Iniciando salvamento de {Count} novas hashtags no banco de dados", newHashtags.Count);
                 const string insertSql = @"
-            INSERT INTO InstagramHashtags (PostId, Hashtag, CreatedAt)
-            VALUES (@PostId, @Hashtag, @CreatedAt)";
+                    INSERT INTO InstagramHashtags (PostId, Hashtag, CreatedAt)
+                    VALUES (@PostId, @Hashtag, @CreatedAt)";
 
                 using var tx = _connection.BeginTransaction();
                 var rowsAffected = await _connection.ExecuteAsync(insertSql, newHashtags, transaction: tx);
@@ -308,8 +308,8 @@ namespace Infra.Data
 
                 _logger.LogInformation("Iniciando salvamento de {Count} novas menções no banco de dados", newMentions.Count);
                 const string insertSql = @"
-            INSERT INTO InstagramMentions (PostId, MentionedUsername, MentionedUserId, MentionedFullName, MentionedProfilePicUrl, IsVerified, CreatedAt)
-            VALUES (@PostId, @MentionedUsername, @MentionedUserId, @MentionedFullName, @MentionedProfilePicUrl, @IsVerified, @CreatedAt)";
+                    INSERT INTO InstagramMentions (PostId, MentionedUsername, MentionedUserId, MentionedFullName, MentionedProfilePicUrl, IsVerified, CreatedAt)
+                    VALUES (@PostId, @MentionedUsername, @MentionedUserId, @MentionedFullName, @MentionedProfilePicUrl, @IsVerified, @CreatedAt)";
 
                 using var tx = _connection.BeginTransaction();
                 var rowsAffected = await _connection.ExecuteAsync(insertSql, newMentions, transaction: tx);
