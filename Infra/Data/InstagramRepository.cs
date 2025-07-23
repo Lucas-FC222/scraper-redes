@@ -16,6 +16,24 @@ namespace Infra.Data
             _logger = logger;
         }
 
+        public async Task<IEnumerable<InstagramPost>> GetPostsByIdsAsync(IEnumerable<string> ids)
+        {
+            if (!ids.Any())
+                return Enumerable.Empty<InstagramPost>();
+
+            const string sql = @"
+                SELECT Id, Type, Caption, DisplayUrl, Images, Url, CreatedAt, Topic
+                FROM InstagramPosts
+                WHERE Id IN @Ids";
+
+            await _connection.OpenAsync();
+            var posts = await _connection.QueryAsync<InstagramPost>(sql, new { Ids = ids });
+            await _connection.CloseAsync();
+
+            _logger.LogInformation("GetPostsByIdsAsync: {Count} posts encontrados", posts.Count());
+            return posts;
+        }
+
         public async Task SavePostsAsync(IEnumerable<InstagramPost> posts)
         {
             try
