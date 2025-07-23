@@ -60,47 +60,45 @@ namespace Services
             {
                 _logger.LogInformation("Processando dataset: {DatasetId}", datasetId);
                 var dataResult = await _apiFyService.ProcessInstagramDatasetAsync(datasetId);
+
                 if (dataResult == null || !dataResult.Posts.Any())
                 {
                     _logger.LogWarning("Nenhum post encontrado no dataset: {DatasetId}", datasetId);
-                    return null;
+                    // Retornamos uma lista vazia para indicar que não há nada a processar
+                    return Enumerable.Empty<Core.InstagramPost>();
                 }
-                
-                _logger.LogInformation("Salvando {PostsCount} posts no banco de dados", dataResult.Posts.Count());
 
+                _logger.LogInformation("Classificando {PostsCount} posts", dataResult.Posts.Count());
                 foreach (var post in dataResult.Posts)
                 {
                     post.Topic = await _postClassifierService.ClassifyPostAsync(post.Caption ?? "");
                 }
 
                 await _instagramRepository.SavePostsAsync(dataResult.Posts);
-                
-                // Salvar comentários, hashtags e menções
+
                 if (dataResult.Comments.Any())
                 {
-                    _logger.LogInformation("Salvando {CommentsCount} comentários no banco de dados", dataResult.Comments.Count());
                     await _instagramRepository.SaveCommentsAsync(dataResult.Comments);
                 }
-                
+
                 if (dataResult.Hashtags.Any())
                 {
-                    _logger.LogInformation("Salvando {HashtagsCount} hashtags no banco de dados", dataResult.Hashtags.Count());
                     await _instagramRepository.SaveHashtagsAsync(dataResult.Hashtags);
                 }
-                
+
                 if (dataResult.Mentions.Any())
                 {
-                    _logger.LogInformation("Salvando {MentionsCount} menções no banco de dados", dataResult.Mentions.Count());
                     await _instagramRepository.SaveMentionsAsync(dataResult.Mentions);
                 }
-                
-                _logger.LogInformation("Todos os dados salvos com sucesso no banco de dados");
+
+                _logger.LogInformation("Todos os dados do dataset {DatasetId} foram processados e salvos.", datasetId);
                 return dataResult.Posts;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro ao processar dataset: {DatasetId}", datasetId);
-                return null;
+                // Apenas logamos o erro e o relançamos. O Controller será responsável por tratar.
+                _logger.LogError(ex, "Erro fatal ao processar dataset: {DatasetId}", datasetId);
+                throw;
             }
         }
 
