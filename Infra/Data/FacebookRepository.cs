@@ -131,5 +131,52 @@ namespace Infra.Data
                 }
             }
         }
+
+        public async Task<IEnumerable<FacebookPost>> SearchPostsByKeywordsAsync(IEnumerable<string> keywords)
+        {
+            if (keywords == null || !keywords.Any())
+                return Enumerable.Empty<FacebookPost>();
+
+            try
+            {
+                _logger.LogInformation("Buscando posts do Facebook por palavras-chave: {Keywords}", string.Join(", ", keywords));
+
+                // Monta o filtro dinâmico para as palavras-chave
+                var filters = keywords.Select((k, i) => $"LOWER(Message) LIKE @kw{i}").ToList();
+                var whereClause = string.Join(" OR ", filters);
+                var sql = $@"
+                    SELECT Id, Url, Message, Timestamp, CommentsCount, ReactionsCount, AuthorId, AuthorName, AuthorUrl, AuthorProfilePictureUrl,
+                           Image, Video, AttachedPostUrl, PageUrl, CreatedAt
+                    FROM FacebookPosts
+                    WHERE {whereClause}
+                    ORDER BY CreatedAt DESC
+                ";
+
+                var parameters = new DynamicParameters();
+                int idx = 0;
+                foreach (var kw in keywords)
+                {
+                    parameters.Add($"kw{idx}", $"%{kw.ToLower()}%");
+                    idx++;
+                }
+
+                await _connection.OpenAsync();
+                var results = await _connection.QueryAsync<FacebookPost>(sql, parameters);
+                _logger.LogInformation("Encontrados {Count} posts do Facebook por palavras-chave", results.Count());
+                return results;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao buscar posts do Facebook por palavras-chave");
+                throw;
+            }
+            finally
+            {
+                if (_connection.State == System.Data.ConnectionState.Open)
+                {
+                    await _connection.CloseAsync();
+                }
+            }
+        }
     }
 } 

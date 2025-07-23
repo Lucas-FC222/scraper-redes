@@ -125,6 +125,11 @@ namespace Services
             }
         }
 
+        public async Task<IEnumerable<Core.FacebookPost>> SearchPostsByKeywordsAsync(IEnumerable<string> keywords)
+        {
+            return await _facebookRepository.SearchPostsByKeywordsAsync(keywords);
+        }
+
         public Task StopAsync(CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
