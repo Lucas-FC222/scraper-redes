@@ -53,12 +53,12 @@ namespace Infra.Data
                         (Id, Type, ShortCode, Caption, Url, CommentsCount, DimensionsHeight, DimensionsWidth, DisplayUrl, Images, 
                          VideoUrl, Alt, LikesCount, VideoViewCount, VideoPlayCount, Timestamp, ChildPosts, OwnerFullName, OwnerUsername, 
                          OwnerId, ProductType, VideoDuration, IsSponsored, TaggedUsers, MusicInfo, CoauthorProducers, IsCommentsDisabled, 
-                         InputUrl, CreatedAt)
+                         InputUrl, CreatedAt, Topic)
                     VALUES
                         (@Id, @Type, @ShortCode, @Caption, @Url, @CommentsCount, @DimensionsHeight, @DimensionsWidth, @DisplayUrl, @Images, 
                          @VideoUrl, @Alt, @LikesCount, @VideoViewCount, @VideoPlayCount, @Timestamp, @ChildPosts, @OwnerFullName, @OwnerUsername, 
                          @OwnerId, @ProductType, @VideoDuration, @IsSponsored, @TaggedUsers, @MusicInfo, @CoauthorProducers, @IsCommentsDisabled, 
-                         @InputUrl, @CreatedAt)
+                         @InputUrl, @CreatedAt, @Topic)
                 ";
 
                 await _connection.OpenAsync();

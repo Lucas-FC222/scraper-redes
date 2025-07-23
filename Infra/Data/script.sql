@@ -121,4 +121,37 @@ BEGIN
         CreatedAt DATETIME2 NOT NULL,
         CONSTRAINT FK_InstagramComments_PostId FOREIGN KEY (PostId) REFERENCES InstagramPosts(Id)
     );
-END 
+END
+
+IF OBJECT_ID('dbo.AppUsers', 'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[AppUsers] (
+  [UserId]   UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+  [Email]    NVARCHAR(200)    NOT NULL,
+  [Name]     NVARCHAR(100)    NOT NULL
+);
+END
+
+IF OBJECT_ID('dbo.SentNotifications', 'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[SentNotifications] (
+        [NotificationId] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+        [UserId] UNIQUEIDENTIFIER NOT NULL,
+        [PostId] NVARCHAR(100) NOT NULL,
+        [SentAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+        [IsRead] BIT NOT NULL DEFAULT 0,
+        CONSTRAINT FK_SentNotifications_UserId FOREIGN KEY (UserId) REFERENCES AppUsers(UserId)
+    );
+END
+
+IF ObJECT_ID('dbo.UserTopicPreferences', 'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[UserTopicPreferences] (
+        [PreferenceId] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+        [UserId] UNIQUEIDENTIFIER NOT NULL,
+        [Topic] NVARCHAR(100) NOT NULL,
+        [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+        CONSTRAINT UC_UserTopic UNIQUE (UserId, Topic),
+        CONSTRAINT FK_UserTopicPreferences_UserId FOREIGN KEY (UserId) REFERENCES AppUsers(UserId)
+    );
+END

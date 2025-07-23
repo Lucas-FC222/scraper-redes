@@ -36,7 +36,7 @@ builder.Services.AddScoped<INotificationProcessor, NotificationProcessor>();
 
 // Workers
 // builder.Services.AddHostedService<FacebookWorker>();
-// builder.Services.AddHostedService<InstagramWorker>();
+builder.Services.AddHostedService<InstagramWorker>();
 builder.Services.AddHostedService<NotificationWorker>();
 
 var host = builder.Build();

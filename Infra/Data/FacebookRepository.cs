@@ -32,10 +32,10 @@ namespace Infra.Data
                 const string sql = @"
                     INSERT INTO FacebookPosts
                         (Id, Url, Message, Timestamp, CommentsCount, ReactionsCount, AuthorId, AuthorName, AuthorUrl, AuthorProfilePictureUrl,
-                         Image, Video, AttachedPostUrl, PageUrl, CreatedAt)
+                         Image, Video, AttachedPostUrl, PageUrl, CreatedAt, Topic)
                     VALUES
                         (@Id, @Url, @Message, @Timestamp, @CommentsCount, @ReactionsCount, @AuthorId, @AuthorName, @AuthorUrl, @AuthorProfilePictureUrl,
-                         @Image, @Video, @AttachedPostUrl, @PageUrl, @CreatedAt)
+                         @Image, @Video, @AttachedPostUrl, @PageUrl, @CreatedAt, @Topic)
                 ";
 
                 await _connection.OpenAsync();
@@ -66,7 +66,7 @@ namespace Infra.Data
                 
                 const string sql = @"
                     SELECT Id, Url, Message, Timestamp, CommentsCount, ReactionsCount, AuthorId, AuthorName, AuthorUrl, AuthorProfilePictureUrl,
-                           Image, Video, AttachedPostUrl, PageUrl, CreatedAt
+                           Image, Video, AttachedPostUrl, PageUrl, CreatedAt, Topic
                     FROM FacebookPosts
                     ORDER BY CreatedAt DESC
                 ";
@@ -99,7 +99,7 @@ namespace Infra.Data
                 
                 const string sql = @"
                     SELECT Id, Url, Message, Timestamp, CommentsCount, ReactionsCount, AuthorId, AuthorName, AuthorUrl, AuthorProfilePictureUrl,
-                           Image, Video, AttachedPostUrl, PageUrl, CreatedAt
+                           Image, Video, AttachedPostUrl, PageUrl, CreatedAt, Topic
                     FROM FacebookPosts
                     WHERE Id = @Id
                 ";
