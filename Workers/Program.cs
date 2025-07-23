@@ -24,7 +24,7 @@ builder.Services.AddHttpClient();
 // Repositórios
 builder.Services.AddScoped<IInstagramRepository, InstagramRepository>();
 builder.Services.AddScoped<IFacebookRepository, FacebookRepository>();
-//builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 
 // Serviços
 builder.Services.AddScoped<IApiFyService, ApiFyService>();
@@ -32,12 +32,12 @@ builder.Services.AddScoped<IPostClassifierService, PostClassifierService>();
 builder.Services.AddScoped<IInstagramService, InstagramService>();
 builder.Services.AddScoped<IFacebookService, FacebookService>();
 
-//builder.Services.AddScoped<INotificationProcessor, NotificationProcessor>();
+builder.Services.AddScoped<INotificationProcessor, NotificationProcessor>();
 
 // Workers
 builder.Services.AddHostedService<FacebookWorker>();
 builder.Services.AddHostedService<InstagramWorker>();
-//builder.Services.AddHostedService<NotificationWorker>();
+builder.Services.AddHostedService<NotificationWorker>();
 
 var host = builder.Build();
 host.Run();

@@ -20,7 +20,7 @@ builder.Services.AddHttpClient();
 // Repositórios
 builder.Services.AddScoped<IInstagramRepository, InstagramRepository>();
 builder.Services.AddScoped<IFacebookRepository, FacebookRepository>();
-//builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 
 // Serviços
 builder.Services.AddScoped<IApiFyService, ApiFyService>();
