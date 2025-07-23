@@ -36,42 +36,45 @@ namespace Infra.Data
 
         public async Task SavePostsAsync(IEnumerable<InstagramPost> posts)
         {
+            var postsList = posts.ToList();
+            if (!postsList.Any()) return;
+
+            // Garante que todos os itens tenham CreatedAt preenchido
+            foreach (var post in postsList)
+            {
+                if (post.CreatedAt == default)
+                    post.CreatedAt = DateTime.UtcNow;
+            }
+
             try
             {
-                var postsList = posts.ToList();
-                // Garante que todos os itens tenham CreatedAt preenchido
-                foreach (var post in postsList)
+                await _connection.OpenAsync();
+                var postIds = postsList.Select(p => p.Id).ToList();
+
+                const string checkSql = "SELECT Id FROM InstagramPosts WHERE Id IN @Ids";
+                var existingPostIds = (await _connection.QueryAsync<string>(checkSql, new { Ids = postIds })).ToHashSet();
+
+                if (existingPostIds.Any())
                 {
-                    if (post.CreatedAt == default)
-                        post.CreatedAt = DateTime.UtcNow;
+                    _logger.LogInformation("{Count} posts já existem no banco de dados e serão ignorados.", existingPostIds.Count);
                 }
 
-                _logger.LogInformation("Iniciando salvamento de {Count} posts no banco de dados", postsList.Count);
+                var newPosts = postsList.Where(p => !existingPostIds.Contains(p.Id)).ToList();
+                if (!newPosts.Any())
+                {
+                    _logger.LogInformation("Nenhum post novo para ser salvo.");
+                    return;
+                }
 
-                const string sql = @"
-                    INSERT INTO InstagramPosts
-                        (Id, Type, ShortCode, Caption, Url, CommentsCount, DimensionsHeight, DimensionsWidth, DisplayUrl, Images, 
-                         VideoUrl, Alt, LikesCount, VideoViewCount, VideoPlayCount, Timestamp, ChildPosts, OwnerFullName, OwnerUsername, 
-                         OwnerId, ProductType, VideoDuration, IsSponsored, TaggedUsers, MusicInfo, CoauthorProducers, IsCommentsDisabled, 
-                         InputUrl, CreatedAt)
-                    VALUES
-                        (@Id, @Type, @ShortCode, @Caption, @Url, @CommentsCount, @DimensionsHeight, @DimensionsWidth, @DisplayUrl, @Images, 
-                         @VideoUrl, @Alt, @LikesCount, @VideoViewCount, @VideoPlayCount, @Timestamp, @ChildPosts, @OwnerFullName, @OwnerUsername, 
-                         @OwnerId, @ProductType, @VideoDuration, @IsSponsored, @TaggedUsers, @MusicInfo, @CoauthorProducers, @IsCommentsDisabled, 
-                         @InputUrl, @CreatedAt)
-                ";
-
-                await _connection.OpenAsync();
-                _logger.LogInformation("Conexão com banco aberta");
+                _logger.LogInformation("Iniciando salvamento de {Count} novos posts no banco de dados", newPosts.Count);
+                const string insertSql = @"
+                    INSERT INTO InstagramPosts (Id, Type, ShortCode, Caption, Url, CommentsCount, DimensionsHeight, DimensionsWidth, DisplayUrl, Images, VideoUrl, Alt, LikesCount, VideoViewCount, VideoPlayCount, Timestamp, ChildPosts, OwnerFullName, OwnerUsername, OwnerId, ProductType, VideoDuration, IsSponsored, TaggedUsers, MusicInfo, CoauthorProducers, IsCommentsDisabled, InputUrl, CreatedAt, Topic)
+                    VALUES (@Id, @Type, @ShortCode, @Caption, @Url, @CommentsCount, @DimensionsHeight, @DimensionsWidth, @DisplayUrl, @Images, @VideoUrl, @Alt, @LikesCount, @VideoViewCount, @VideoPlayCount, @Timestamp, @ChildPosts, @OwnerFullName, @OwnerUsername, @OwnerId, @ProductType, @VideoDuration, @IsSponsored, @TaggedUsers, @MusicInfo, @CoauthorProducers, @IsCommentsDisabled, @InputUrl, @CreatedAt, @Topic)";
 
                 using var tx = _connection.BeginTransaction();
-                _logger.LogInformation("Transação iniciada");
-
-                var rowsAffected = await _connection.ExecuteAsync(sql, postsList, transaction: tx);
-                _logger.LogInformation("ExecuteAsync concluído. {RowsAffected} linhas afetadas", rowsAffected);
-
+                var rowsAffected = await _connection.ExecuteAsync(insertSql, newPosts, transaction: tx);
                 tx.Commit();
-                _logger.LogInformation("Transação commitada com sucesso");
+                _logger.LogInformation("Novos posts salvos com sucesso. {RowsAffected} linhas afetadas", rowsAffected);
             }
             catch (Exception ex)
             {
@@ -83,7 +86,6 @@ namespace Infra.Data
                 if (_connection.State == System.Data.ConnectionState.Open)
                 {
                     await _connection.CloseAsync();
-                    _logger.LogInformation("Conexão com banco fechada");
                 }
             }
         }
@@ -93,7 +95,7 @@ namespace Infra.Data
             try
             {
                 _logger.LogInformation("Buscando todos os posts do banco");
-                
+
                 const string sql = @"
                     SELECT Id, Type, ShortCode, Caption, Url, CommentsCount, DimensionsHeight, DimensionsWidth, DisplayUrl, Images, 
                            VideoUrl, Alt, LikesCount, VideoViewCount, VideoPlayCount, Timestamp, ChildPosts, OwnerFullName, OwnerUsername, 
@@ -106,7 +108,7 @@ namespace Infra.Data
                 await _connection.OpenAsync();
                 var results = await _connection.QueryAsync<InstagramPost>(sql);
                 _logger.LogInformation("Encontrados {Count} posts", results.Count());
-                
+
                 return results;
             }
             catch (Exception ex)
@@ -128,7 +130,7 @@ namespace Infra.Data
             try
             {
                 _logger.LogInformation("Buscando post com ID: {Id}", id);
-                
+
                 const string sql = @"
                     SELECT Id, Type, ShortCode, Caption, Url, CommentsCount, DimensionsHeight, DimensionsWidth, DisplayUrl, Images, 
                            VideoUrl, Alt, LikesCount, VideoViewCount, VideoPlayCount, Timestamp, ChildPosts, OwnerFullName, OwnerUsername, 
@@ -140,7 +142,7 @@ namespace Infra.Data
 
                 await _connection.OpenAsync();
                 var result = await _connection.QueryFirstOrDefaultAsync<InstagramPost>(sql, new { Id = id });
-                
+
                 if (result != null)
                 {
                     _logger.LogInformation("Post encontrado para ID: {Id}", id);
@@ -149,7 +151,7 @@ namespace Infra.Data
                 {
                     _logger.LogWarning("Post não encontrado para ID: {Id}", id);
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -168,29 +170,45 @@ namespace Infra.Data
 
         public async Task SaveCommentsAsync(IEnumerable<InstagramComment> comments)
         {
+            var commentsList = comments.ToList();
+            if (!commentsList.Any()) return;
+
+            foreach (var comment in commentsList)
+            {
+                if (comment.CreatedAt == default)
+                    comment.CreatedAt = DateTime.UtcNow;
+            }
+
             try
             {
-                var commentsList = comments.ToList();
-                foreach (var comment in commentsList)
+                await _connection.OpenAsync();
+                var commentIds = commentsList.Select(c => c.Id).ToList();
+
+                const string checkSql = "SELECT Id FROM InstagramComments WHERE Id IN @Ids";
+                var existingCommentIds = (await _connection.QueryAsync<string>(checkSql, new { Ids = commentIds })).ToHashSet();
+
+                if (existingCommentIds.Any())
                 {
-                    if (comment.CreatedAt == default)
-                        comment.CreatedAt = DateTime.UtcNow;
+                    _logger.LogInformation("{Count} comentários já existem no banco de dados e serão ignorados.", existingCommentIds.Count);
                 }
 
-                _logger.LogInformation("Iniciando salvamento de {Count} comentários no banco de dados", commentsList.Count);
+                var newComments = commentsList.Where(c => !existingCommentIds.Contains(c.Id)).ToList();
 
-                const string sql = @"
-                    INSERT INTO InstagramComments
-                        (Id, PostId, Text, OwnerUsername, OwnerId, OwnerProfilePicUrl, Timestamp, RepliesCount, LikesCount, Replies, CreatedAt)
-                    VALUES
-                        (@Id, @PostId, @Text, @OwnerUsername, @OwnerId, @OwnerProfilePicUrl, @Timestamp, @RepliesCount, @LikesCount, @Replies, @CreatedAt)
-                ";
+                if (!newComments.Any())
+                {
+                    _logger.LogInformation("Nenhum comentário novo para ser salvo.");
+                    return;
+                }
 
-                await _connection.OpenAsync();
+                _logger.LogInformation("Iniciando salvamento de {Count} novos comentários no banco de dados", newComments.Count);
+                const string insertSql = @"
+                    INSERT INTO InstagramComments (Id, PostId, Text, OwnerUsername, OwnerId, OwnerProfilePicUrl, Timestamp, RepliesCount, LikesCount, Replies, CreatedAt)
+                    VALUES (@Id, @PostId, @Text, @OwnerUsername, @OwnerId, @OwnerProfilePicUrl, @Timestamp, @RepliesCount, @LikesCount, @Replies, @CreatedAt)";
+
                 using var tx = _connection.BeginTransaction();
-                var rowsAffected = await _connection.ExecuteAsync(sql, commentsList, transaction: tx);
+                var rowsAffected = await _connection.ExecuteAsync(insertSql, newComments, transaction: tx);
                 tx.Commit();
-                _logger.LogInformation("Comentários salvos com sucesso. {RowsAffected} linhas afetadas", rowsAffected);
+                _logger.LogInformation("Novos comentários salvos com sucesso. {RowsAffected} linhas afetadas", rowsAffected);
             }
             catch (Exception ex)
             {
@@ -208,29 +226,42 @@ namespace Infra.Data
 
         public async Task SaveHashtagsAsync(IEnumerable<InstagramHashtag> hashtags)
         {
+            var hashtagsList = hashtags.ToList();
+            if (!hashtagsList.Any()) return;
+
+            foreach (var hashtag in hashtagsList)
+            {
+                if (hashtag.CreatedAt == default)
+                    hashtag.CreatedAt = DateTime.UtcNow;
+            }
+
             try
             {
-                var hashtagsList = hashtags.ToList();
-                foreach (var hashtag in hashtagsList)
+                await _connection.OpenAsync();
+
+                var postIds = hashtagsList.Select(h => h.PostId).Distinct().ToList();
+
+                const string checkSql = "SELECT PostId, Hashtag FROM InstagramHashtags WHERE PostId IN @PostIds";
+                var existingHashtags = (await _connection.QueryAsync<(string PostId, string Hashtag)>(checkSql, new { PostIds = postIds }))
+                                        .ToHashSet();
+
+                var newHashtags = hashtagsList.Where(h => !existingHashtags.Contains((h.PostId, h.Hashtag))).ToList();
+
+                if (!newHashtags.Any())
                 {
-                    if (hashtag.CreatedAt == default)
-                        hashtag.CreatedAt = DateTime.UtcNow;
+                    _logger.LogInformation("Nenhuma hashtag nova para ser salva.");
+                    return;
                 }
 
-                _logger.LogInformation("Iniciando salvamento de {Count} hashtags no banco de dados", hashtagsList.Count);
+                _logger.LogInformation("Iniciando salvamento de {Count} novas hashtags no banco de dados", newHashtags.Count);
+                const string insertSql = @"
+                    INSERT INTO InstagramHashtags (PostId, Hashtag, CreatedAt)
+                    VALUES (@PostId, @Hashtag, @CreatedAt)";
 
-                const string sql = @"
-                    INSERT INTO InstagramHashtags
-                        (PostId, Hashtag, CreatedAt)
-                    VALUES
-                        (@PostId, @Hashtag, @CreatedAt)
-                ";
-
-                await _connection.OpenAsync();
                 using var tx = _connection.BeginTransaction();
-                var rowsAffected = await _connection.ExecuteAsync(sql, hashtagsList, transaction: tx);
+                var rowsAffected = await _connection.ExecuteAsync(insertSql, newHashtags, transaction: tx);
                 tx.Commit();
-                _logger.LogInformation("Hashtags salvas com sucesso. {RowsAffected} linhas afetadas", rowsAffected);
+                _logger.LogInformation("Novas hashtags salvas com sucesso. {RowsAffected} linhas afetadas", rowsAffected);
             }
             catch (Exception ex)
             {
@@ -248,29 +279,42 @@ namespace Infra.Data
 
         public async Task SaveMentionsAsync(IEnumerable<InstagramMention> mentions)
         {
+            var mentionsList = mentions.ToList();
+            if (!mentionsList.Any()) return;
+
+            foreach (var mention in mentionsList)
+            {
+                if (mention.CreatedAt == default)
+                    mention.CreatedAt = DateTime.UtcNow;
+            }
+
             try
             {
-                var mentionsList = mentions.ToList();
-                foreach (var mention in mentionsList)
+                await _connection.OpenAsync();
+
+                var postIds = mentionsList.Select(m => m.PostId).Distinct().ToList();
+
+                const string checkSql = "SELECT PostId, MentionedUsername FROM InstagramMentions WHERE PostId IN @PostIds";
+                var existingMentions = (await _connection.QueryAsync<(string PostId, string MentionedUsername)>(checkSql, new { PostIds = postIds }))
+                                        .ToHashSet();
+
+                var newMentions = mentionsList.Where(m => !existingMentions.Contains((m.PostId, m.MentionedUsername))).ToList();
+
+                if (!newMentions.Any())
                 {
-                    if (mention.CreatedAt == default)
-                        mention.CreatedAt = DateTime.UtcNow;
+                    _logger.LogInformation("Nenhuma menção nova para ser salva.");
+                    return;
                 }
 
-                _logger.LogInformation("Iniciando salvamento de {Count} menções no banco de dados", mentionsList.Count);
+                _logger.LogInformation("Iniciando salvamento de {Count} novas menções no banco de dados", newMentions.Count);
+                const string insertSql = @"
+                    INSERT INTO InstagramMentions (PostId, MentionedUsername, MentionedUserId, MentionedFullName, MentionedProfilePicUrl, IsVerified, CreatedAt)
+                    VALUES (@PostId, @MentionedUsername, @MentionedUserId, @MentionedFullName, @MentionedProfilePicUrl, @IsVerified, @CreatedAt)";
 
-                const string sql = @"
-                    INSERT INTO InstagramMentions
-                        (PostId, MentionedUsername, MentionedUserId, MentionedFullName, MentionedProfilePicUrl, IsVerified, CreatedAt)
-                    VALUES
-                        (@PostId, @MentionedUsername, @MentionedUserId, @MentionedFullName, @MentionedProfilePicUrl, @IsVerified, @CreatedAt)
-                ";
-
-                await _connection.OpenAsync();
                 using var tx = _connection.BeginTransaction();
-                var rowsAffected = await _connection.ExecuteAsync(sql, mentionsList, transaction: tx);
+                var rowsAffected = await _connection.ExecuteAsync(insertSql, newMentions, transaction: tx);
                 tx.Commit();
-                _logger.LogInformation("Menções salvas com sucesso. {RowsAffected} linhas afetadas", rowsAffected);
+                _logger.LogInformation("Novas menções salvas com sucesso. {RowsAffected} linhas afetadas", rowsAffected);
             }
             catch (Exception ex)
             {
@@ -291,7 +335,7 @@ namespace Infra.Data
             try
             {
                 _logger.LogInformation("Buscando comentários do post: {PostId}", postId);
-                
+
                 const string sql = @"
                     SELECT Id, PostId, Text, OwnerUsername, OwnerId, OwnerProfilePicUrl, Timestamp, RepliesCount, LikesCount, Replies, CreatedAt
                     FROM InstagramComments
@@ -302,7 +346,7 @@ namespace Infra.Data
                 await _connection.OpenAsync();
                 var results = await _connection.QueryAsync<InstagramComment>(sql, new { PostId = postId });
                 _logger.LogInformation("Encontrados {Count} comentários para o post {PostId}", results.Count(), postId);
-                
+
                 return results;
             }
             catch (Exception ex)
@@ -324,7 +368,7 @@ namespace Infra.Data
             try
             {
                 _logger.LogInformation("Buscando hashtags do post: {PostId}", postId);
-                
+
                 const string sql = @"
                     SELECT PostId, Hashtag, CreatedAt
                     FROM InstagramHashtags
@@ -335,7 +379,7 @@ namespace Infra.Data
                 await _connection.OpenAsync();
                 var results = await _connection.QueryAsync<InstagramHashtag>(sql, new { PostId = postId });
                 _logger.LogInformation("Encontradas {Count} hashtags para o post {PostId}", results.Count(), postId);
-                
+
                 return results;
             }
             catch (Exception ex)
@@ -357,7 +401,7 @@ namespace Infra.Data
             try
             {
                 _logger.LogInformation("Buscando menções do post: {PostId}", postId);
-                
+
                 const string sql = @"
                     SELECT PostId, MentionedUsername, MentionedUserId, MentionedFullName, MentionedProfilePicUrl, IsVerified, CreatedAt
                     FROM InstagramMentions
@@ -368,7 +412,7 @@ namespace Infra.Data
                 await _connection.OpenAsync();
                 var results = await _connection.QueryAsync<InstagramMention>(sql, new { PostId = postId });
                 _logger.LogInformation("Encontradas {Count} menções para o post {PostId}", results.Count(), postId);
-                
+
                 return results;
             }
             catch (Exception ex)
@@ -394,7 +438,6 @@ namespace Infra.Data
             {
                 _logger.LogInformation("Buscando posts do Instagram por palavras-chave: {Keywords}", string.Join(", ", keywords));
 
-                // Monta o filtro dinâmico para as palavras-chave
                 var filters = keywords.Select((k, i) => $"LOWER(Caption) LIKE @kw{i}").ToList();
                 var whereClause = string.Join(" OR ", filters);
                 var sql = $@"
@@ -434,4 +477,4 @@ namespace Infra.Data
             }
         }
     }
-} 
+}
