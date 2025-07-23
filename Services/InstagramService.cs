@@ -174,6 +174,11 @@ namespace Services
             }
         }
 
+        public async Task<IEnumerable<Core.InstagramPost>> SearchPostsByKeywordsAsync(IEnumerable<string> keywords)
+        {
+            return await _instagramRepository.SearchPostsByKeywordsAsync(keywords);
+        }
+
         public Task StopAsync(CancellationToken cancellationToken)
         {
             throw new NotImplementedException();

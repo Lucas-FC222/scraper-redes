@@ -12,5 +12,6 @@ namespace Services
         Task<IEnumerable<Core.FacebookPost>> ProcessDatasetAsync(string datasetId);
         Task<IEnumerable<Core.FacebookPost>> GetAllPostsAsync();
         Task<Core.FacebookPost?> GetPostByIdAsync(string id);
+        Task<IEnumerable<Core.FacebookPost>> SearchPostsByKeywordsAsync(IEnumerable<string> keywords);
     }
 }

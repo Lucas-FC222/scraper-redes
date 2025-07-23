@@ -11,5 +11,6 @@
         Task<IEnumerable<Core.InstagramComment>> GetCommentsByPostIdAsync(string postId);
         Task<IEnumerable<Core.InstagramHashtag>> GetHashtagsByPostIdAsync(string postId);
         Task<IEnumerable<Core.InstagramMention>> GetMentionsByPostIdAsync(string postId);
+        Task<IEnumerable<Core.InstagramPost>> SearchPostsByKeywordsAsync(IEnumerable<string> keywords);
     }
 }
