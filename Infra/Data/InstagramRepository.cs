@@ -384,5 +384,54 @@ namespace Infra.Data
                 }
             }
         }
+
+        public async Task<IEnumerable<InstagramPost>> SearchPostsByKeywordsAsync(IEnumerable<string> keywords)
+        {
+            if (keywords == null || !keywords.Any())
+                return Enumerable.Empty<InstagramPost>();
+
+            try
+            {
+                _logger.LogInformation("Buscando posts do Instagram por palavras-chave: {Keywords}", string.Join(", ", keywords));
+
+                // Monta o filtro dinâmico para as palavras-chave
+                var filters = keywords.Select((k, i) => $"LOWER(Caption) LIKE @kw{i}").ToList();
+                var whereClause = string.Join(" OR ", filters);
+                var sql = $@"
+                    SELECT Id, Type, ShortCode, Caption, Url, CommentsCount, DimensionsHeight, DimensionsWidth, DisplayUrl, Images, 
+                           VideoUrl, Alt, LikesCount, VideoViewCount, VideoPlayCount, Timestamp, ChildPosts, OwnerFullName, OwnerUsername, 
+                           OwnerId, ProductType, VideoDuration, IsSponsored, TaggedUsers, MusicInfo, CoauthorProducers, IsCommentsDisabled, 
+                           InputUrl, CreatedAt, Topic
+                    FROM InstagramPosts
+                    WHERE {whereClause}
+                    ORDER BY CreatedAt DESC
+                ";
+
+                var parameters = new Dapper.DynamicParameters();
+                int idx = 0;
+                foreach (var kw in keywords)
+                {
+                    parameters.Add($"kw{idx}", $"%{kw.ToLower()}%");
+                    idx++;
+                }
+
+                await _connection.OpenAsync();
+                var results = await _connection.QueryAsync<InstagramPost>(sql, parameters);
+                _logger.LogInformation("Encontrados {Count} posts do Instagram por palavras-chave", results.Count());
+                return results;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao buscar posts do Instagram por palavras-chave");
+                throw;
+            }
+            finally
+            {
+                if (_connection.State == System.Data.ConnectionState.Open)
+                {
+                    await _connection.CloseAsync();
+                }
+            }
+        }
     }
 } 

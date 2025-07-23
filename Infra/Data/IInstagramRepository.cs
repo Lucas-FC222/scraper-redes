@@ -14,5 +14,6 @@ namespace Infra.Data
         Task<IEnumerable<InstagramComment>> GetCommentsByPostIdAsync(string postId);
         Task<IEnumerable<InstagramHashtag>> GetHashtagsByPostIdAsync(string postId);
         Task<IEnumerable<InstagramMention>> GetMentionsByPostIdAsync(string postId);
+        Task<IEnumerable<InstagramPost>> SearchPostsByKeywordsAsync(IEnumerable<string> keywords);
     }
 } 

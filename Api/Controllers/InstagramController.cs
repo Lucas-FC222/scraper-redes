@@ -87,5 +87,19 @@ namespace Api.Controllers
                 return StatusCode(500, $"Erro interno: {ex.Message}");
             }
         }
+
+        [HttpGet("posts/search")]
+        public async Task<IActionResult> SearchPostsByKeywords([FromQuery] string keywords)
+        {
+            if (string.IsNullOrWhiteSpace(keywords))
+                return BadRequest("O parâmetro 'keywords' é obrigatório.");
+
+            var keywordsList = keywords.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (!keywordsList.Any())
+                return BadRequest("Nenhuma palavra-chave válida informada.");
+
+            var posts = await _instagramService.SearchPostsByKeywordsAsync(keywordsList);
+            return Ok(posts);
+        }
     }
 }
