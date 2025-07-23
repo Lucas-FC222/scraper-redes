@@ -80,7 +80,7 @@ namespace Infra.Data
                     SELECT Id, Type, ShortCode, Caption, Url, CommentsCount, DimensionsHeight, DimensionsWidth, DisplayUrl, Images, 
                            VideoUrl, Alt, LikesCount, VideoViewCount, VideoPlayCount, Timestamp, ChildPosts, OwnerFullName, OwnerUsername, 
                            OwnerId, ProductType, VideoDuration, IsSponsored, TaggedUsers, MusicInfo, CoauthorProducers, IsCommentsDisabled, 
-                           InputUrl, CreatedAt
+                           InputUrl, CreatedAt, Topic
                     FROM InstagramPosts
                     ORDER BY CreatedAt DESC
                 ";
@@ -115,7 +115,7 @@ namespace Infra.Data
                     SELECT Id, Type, ShortCode, Caption, Url, CommentsCount, DimensionsHeight, DimensionsWidth, DisplayUrl, Images, 
                            VideoUrl, Alt, LikesCount, VideoViewCount, VideoPlayCount, Timestamp, ChildPosts, OwnerFullName, OwnerUsername, 
                            OwnerId, ProductType, VideoDuration, IsSponsored, TaggedUsers, MusicInfo, CoauthorProducers, IsCommentsDisabled, 
-                           InputUrl, CreatedAt
+                           InputUrl, CreatedAt, Topic
                     FROM InstagramPosts
                     WHERE Id = @Id
                 ";

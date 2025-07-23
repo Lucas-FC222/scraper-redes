@@ -9,7 +9,9 @@ namespace Core
         
         [Column(TypeName = "nvarchar(1000)")]
         public string Url { get; set; } = string.Empty;
-        
+        [Column(TypeName = "nvarchar(100)")]
+        public string Topic { get; set; } = string.Empty;
+
         [Column(TypeName = "nvarchar(max)")]
         public string Message { get; set; } = string.Empty;
         

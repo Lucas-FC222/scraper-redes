@@ -77,7 +77,10 @@ namespace Core
         
         [Column(TypeName = "nvarchar(1000)")]
         public string InputUrl { get; set; } = string.Empty; // URL original do perfil
-        
+
+        [Column(TypeName = "nvarchar(100)")]
+        public string Topic { get; set; } = string.Empty;
+
         [Column(TypeName = "datetime2")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
