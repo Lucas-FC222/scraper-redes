@@ -49,7 +49,7 @@ namespace Api.Configuration
 
                 if (parameter.Schema.Default == null && description.DefaultValue != null)
                 {
-                    var json = JsonSerializer.Serialize(description.DefaultValue, description.ModelMetadata.ModelType);
+                    var json = JsonSerializer.Serialize(description.DefaultValue, description.ModelMetadata!.ModelType);
                     parameter.Schema.Default = OpenApiAnyFactory.CreateFromJson(json);
                 }
 

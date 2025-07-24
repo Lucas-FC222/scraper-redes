@@ -1,8 +1,8 @@
+using Core.Models;
+using Core.Repositories;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
-using Core.Models;
-using Core.Repositories;
 
 namespace Data
 {

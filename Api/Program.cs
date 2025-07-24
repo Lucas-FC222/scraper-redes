@@ -1,21 +1,18 @@
 using Services;
 using Microsoft.Data.SqlClient;
 using Api.Middleware;
-using Core.Repositories;
 using Data;
-using Core.Services;
 using Infra.Externals.ApiFy.Models;
-using Infra.Externals.ApiFy.Interfaces;
 using Infra.Externals.ApiFy.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Api.Configuration;
-using Infra.Data;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using Core.Repositories;
+using Core.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,7 +34,7 @@ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 // Serviços
-builder.Services.AddScoped<IApiFyService, ApiFyService>();
+builder.Services.AddScoped<ICrowlerService, ApiFyService>();
 builder.Services.AddScoped<IInstagramService, InstagramService>();
 builder.Services.AddScoped<IFacebookService, FacebookService>();
 builder.Services.AddScoped<IPostClassifierService, PostClassifierService>();

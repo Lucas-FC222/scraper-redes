@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Api.Controllers.V1
+namespace Api.Controllers
 {
     /// <summary>
     /// Controller de versão demonstrativa - Versão 1

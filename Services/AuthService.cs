@@ -1,13 +1,13 @@
-using Core.Dtos;
-using Core.Models;
-using Core.Repositories;
-using Core.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using BCrypt.Net;
+using Core.Models;
+using Core.Repositories;
+using Core.Services;
+using Core.Dtos;
 
 namespace Services
 {
@@ -109,7 +109,7 @@ namespace Services
         /// </summary>
         /// <param name="email">Email do usuário</param>
         /// <returns>Objeto AppUser se encontrado, null caso contrário</returns>
-        public async Task<AppUser> GetUserByEmailAsync(string email)
+        public async Task<AppUser?> GetUserByEmailAsync(string email)
         {
             return await _userRepository.GetByEmailAsync(email);
         }

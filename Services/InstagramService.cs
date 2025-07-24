@@ -1,21 +1,20 @@
 ﻿using Core.Models;
 using Core.Repositories;
 using Core.Services;
-using Infra.Externals.ApiFy.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace Services
 {
     public class InstagramService : IInstagramService
     {
-        private readonly IApiFyService _apiFyService;
+        private readonly ICrowlerService _crowlerService;
         private readonly IInstagramRepository _instagramRepository;
         private readonly ILogger<InstagramService> _logger;
         private readonly IPostClassifierService _postClassifierService;
 
-        public InstagramService(IApiFyService apiFyService, IInstagramRepository instagramRepository, ILogger<InstagramService> logger, IPostClassifierService postClassifierService)
+        public InstagramService(ICrowlerService crowlerService, IInstagramRepository instagramRepository, ILogger<InstagramService> logger, IPostClassifierService postClassifierService)
         {
-            _apiFyService = apiFyService;
+            _crowlerService = crowlerService;
             _instagramRepository = instagramRepository;
             _logger = logger;
             _postClassifierService = postClassifierService;
@@ -25,7 +24,7 @@ namespace Services
         public async Task<string?> RunScraperAsync(string username, int limit)
         {
             _logger.LogInformation("Executando scraper do Instagram para: {Username}", username);
-            var runId = await _apiFyService.RunInstagramScraperAsync(username, limit);
+            var runId = await _crowlerService.RunInstagramScraperAsync(username, limit);
             if (string.IsNullOrEmpty(runId))
             {
                 _logger.LogError("Falha ao iniciar scraper do Instagram");
@@ -38,7 +37,7 @@ namespace Services
         public async Task<IEnumerable<InstagramPost>> ProcessDatasetAsync(string datasetId)
         {
             _logger.LogInformation("Processando dataset: {DatasetId}", datasetId);
-            var dataResult = await _apiFyService.ProcessInstagramDatasetAsync(datasetId);
+            var dataResult = await _crowlerService.ProcessInstagramDatasetAsync(datasetId);
 
             if (dataResult == null || !dataResult.Posts.Any())
             {

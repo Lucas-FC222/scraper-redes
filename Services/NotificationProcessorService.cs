@@ -1,21 +1,21 @@
-﻿using Microsoft.Extensions.Logging;
-using Core.Repositories;
+﻿using Core.Repositories;
 using Core.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Services
 {
-    public class NotificationProcessor : INotificationProcessorService
+    public class NotificationProcessorService : INotificationProcessorService
     {
         private readonly INotificationRepository _notifRepo;
         private readonly IInstagramRepository _postRepo;
         //private readonly INotificationService _notifier;
-        private readonly ILogger<NotificationProcessor> _logger;
+        private readonly ILogger<NotificationProcessorService> _logger;
 
-        public NotificationProcessor(
+        public NotificationProcessorService(
             INotificationRepository notifRepo,
             IInstagramRepository postRepo,
             //INotificationService notifier,
-            ILogger<NotificationProcessor> logger)
+            ILogger<NotificationProcessorService> logger)
         {
             _notifRepo = notifRepo;
             _postRepo = postRepo;

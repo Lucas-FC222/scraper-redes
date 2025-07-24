@@ -7,12 +7,21 @@ using Core.Services;
 
 namespace Services
 {
-  public class PostClassifierService : IPostClassifierService
-  {
+    /// <summary>
+    /// Serviço responsável por classificar o tema de posts usando IA.
+    /// </summary>
+    public class PostClassifierService : IPostClassifierService
+    {
         private readonly ILogger<PostClassifierService> _logger;
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
 
+        /// <summary>
+        /// Inicializa o serviço de classificação de posts.
+        /// </summary>
+        /// <param name="logger">Logger para registro de eventos.</param>
+        /// <param name="httpClient">HttpClient para chamadas à API Groq.</param>
+        /// <param name="configuration">Configuração para obter a chave da API.</param>
         public PostClassifierService(ILogger<PostClassifierService> logger, HttpClient httpClient, IConfiguration configuration)
         {
             _logger = logger;
@@ -20,6 +29,11 @@ namespace Services
             _apiKey = configuration["Groq:ApiKey"] ?? throw new ArgumentNullException(nameof(configuration), "API key cannot be null.");
         }
 
+        /// <summary>
+        /// Classifica o tema de um post usando IA Groq.
+        /// </summary>
+        /// <param name="text">Texto do post a ser classificado.</param>
+        /// <returns>O tema classificado do post.</returns>
         public async Task<string> ClassifyPostAsync(string text)
         {
             var prompt = $"Classifique o tema deste post em: esporte, política, tecnologia, entretenimento, outros. Responda apenas com o tema. Post: {text}";
@@ -50,5 +64,5 @@ namespace Services
 
             return result?.Trim() ?? "outros";
         }
-  }
+    }
 }

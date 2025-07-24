@@ -4,22 +4,24 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 
-namespace Infra.Data
+namespace Data
 {
-    public class UserRepository : IUserRepository
+    /// <summary>
+    /// Repositório de usuários para operações CRUD e preferências de tópicos.
+    /// </summary>
+    public class UserRepository(
+        SqlConnection connection,
+        ILogger<UserRepository> logger) : IUserRepository
     {
-        private readonly SqlConnection _connection;
-        private readonly ILogger<UserRepository> _logger;
+        private readonly SqlConnection _connection = connection;
+        private readonly ILogger<UserRepository> _logger = logger;
 
-        public UserRepository(
-            SqlConnection connection,
-            ILogger<UserRepository> logger)
-        {
-            _connection = connection;
-            _logger = logger;
-        }
-
-        public async Task<AppUser> CreateAsync(AppUser user)
+        /// <summary>
+        /// Cria um novo usuário e suas preferências de tópicos.
+        /// </summary>
+        /// <param name="user">Usuário a ser criado.</param>
+        /// <returns>Usuário criado.</returns>
+        public async Task<AppUser?> CreateAsync(AppUser user)
         {
             await _connection.OpenAsync();
 
@@ -32,7 +34,7 @@ namespace Infra.Data
             await _connection.ExecuteAsync(sql, user);
 
             // Inserir as preferências de tópicos
-            if (user.TopicPreferences != null && user.TopicPreferences.Any())
+            if (user.TopicPreferences != null && user.TopicPreferences.Count != 0)
             {
                 var topicSql = @"
                     INSERT INTO UserTopicPreferences (UserId, Topic)
@@ -41,13 +43,17 @@ namespace Infra.Data
 
                 foreach (var topic in user.TopicPreferences)
                 {
-                    await _connection.ExecuteAsync(topicSql, new { UserId = user.UserId, Topic = topic });
+                    await _connection.ExecuteAsync(topicSql, new { user.UserId, Topic = topic });
                 }
             }
 
             return user;
         }
 
+        /// <summary>
+        /// Remove um usuário e suas preferências de tópicos.
+        /// </summary>
+        /// <param name="id">ID do usuário.</param>
         public async Task DeleteAsync(Guid id)
         {
             await _connection.OpenAsync();
@@ -61,6 +67,11 @@ namespace Infra.Data
             await _connection.ExecuteAsync(deleteUserSql, new { UserId = id });
         }
 
+        /// <summary>
+        /// Verifica se existe um usuário com o email informado.
+        /// </summary>
+        /// <param name="email">Email a ser verificado.</param>
+        /// <returns>True se existir, false caso contrário.</returns>
         public async Task<bool> ExistsByEmailAsync(string email)
         {
             await _connection.OpenAsync();
@@ -71,6 +82,10 @@ namespace Infra.Data
             return count > 0;
         }
 
+        /// <summary>
+        /// Retorna todos os usuários cadastrados.
+        /// </summary>
+        /// <returns>Lista de usuários.</returns>
         public async Task<IEnumerable<AppUser>> GetAllAsync()
         {
             await _connection.OpenAsync();
@@ -81,14 +96,19 @@ namespace Infra.Data
             {
                 // Carregar preferências de tópicos para cada usuário
                 var topicsSql = "SELECT Topic FROM UserTopicPreferences WHERE UserId = @UserId";
-                var topics = await _connection.QueryAsync<string>(topicsSql, new { UserId = user.UserId });
-                user.TopicPreferences = topics.ToList();
+                var topics = await _connection.QueryAsync<string>(topicsSql, new { user.UserId });
+                user.TopicPreferences = [.. topics];
             }
 
             return users;
         }
 
-        public async Task<AppUser> GetByEmailAsync(string email)
+        /// <summary>
+        /// Busca um usuário pelo email.
+        /// </summary>
+        /// <param name="email">Email do usuário.</param>
+        /// <returns>Usuário encontrado ou null.</returns>
+        public async Task<AppUser?> GetByEmailAsync(string email)
         {
             await _connection.OpenAsync();
 
@@ -99,14 +119,19 @@ namespace Infra.Data
             {
                 // Carregar preferências de tópicos
                 var topicsSql = "SELECT Topic FROM UserTopicPreferences WHERE UserId = @UserId";
-                var topics = await _connection.QueryAsync<string>(topicsSql, new { UserId = user.UserId });
-                user.TopicPreferences = topics.ToList();
+                var topics = await _connection.QueryAsync<string>(topicsSql, new { user.UserId });
+                user.TopicPreferences = [.. topics];
             }
 
             return user;
         }
 
-        public async Task<AppUser> GetByIdAsync(Guid id)
+        /// <summary>
+        /// Busca um usuário pelo ID.
+        /// </summary>
+        /// <param name="id">ID do usuário.</param>
+        /// <returns>Usuário encontrado ou null.</returns>
+        public async Task<AppUser?> GetByIdAsync(Guid id)
         {
             await _connection.OpenAsync();
 
@@ -117,13 +142,17 @@ namespace Infra.Data
             {
                 // Carregar preferências de tópicos
                 var topicsSql = "SELECT Topic FROM UserTopicPreferences WHERE UserId = @UserId";
-                var topics = await _connection.QueryAsync<string>(topicsSql, new { UserId = user.UserId });
-                user.TopicPreferences = topics.ToList();
+                var topics = await _connection.QueryAsync<string>(topicsSql, new { user.UserId });
+                user.TopicPreferences = [.. topics];
             }
 
             return user;
         }
 
+        /// <summary>
+        /// Atualiza os dados e preferências de um usuário.
+        /// </summary>
+        /// <param name="user">Usuário a ser atualizado.</param>
         public async Task UpdateAsync(AppUser user)
         {
             await _connection.OpenAsync();
@@ -142,10 +171,10 @@ namespace Infra.Data
             // Atualizar preferências de tópicos
             // Primeiro remover todas as existentes
             var deleteTopicsSql = "DELETE FROM UserTopicPreferences WHERE UserId = @UserId";
-            await _connection.ExecuteAsync(deleteTopicsSql, new { UserId = user.UserId });
+            await _connection.ExecuteAsync(deleteTopicsSql, new { user.UserId });
 
             // Depois inserir as novas
-            if (user.TopicPreferences != null && user.TopicPreferences.Any())
+            if (user.TopicPreferences != null && user.TopicPreferences.Count != 0)
             {
                 var topicSql = @"
                     INSERT INTO UserTopicPreferences (UserId, Topic)
@@ -154,7 +183,7 @@ namespace Infra.Data
 
                 foreach (var topic in user.TopicPreferences)
                 {
-                    await _connection.ExecuteAsync(topicSql, new { UserId = user.UserId, Topic = topic });
+                    await _connection.ExecuteAsync(topicSql, new { user.UserId, Topic = topic });
                 }
             }
         }
