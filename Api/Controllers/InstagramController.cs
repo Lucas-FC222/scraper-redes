@@ -1,6 +1,6 @@
-﻿using Core.Models;
-using Core.Services;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Services.Features.Instagram.Models;
+using Shared.Services;
 
 namespace Api.Controllers
 {

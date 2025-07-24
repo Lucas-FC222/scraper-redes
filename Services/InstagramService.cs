@@ -1,7 +1,7 @@
-﻿using Core.Models;
-using Core.Repositories;
-using Core.Services;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Services.Features.Instagram.Models;
+using Services.Features.Instagram.Repositories;
+using Shared.Services;
 
 namespace Services
 {

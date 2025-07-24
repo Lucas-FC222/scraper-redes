@@ -8,12 +8,35 @@
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="FluentValidation" Version="12.0.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.7" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Crowler\Infra\Apis\Infra.Externals.ApiFy.csproj" />
-    <ProjectReference Include="..\Infra\Data\Data.csproj" />
+    <Folder Include="Features\Auth\Repositories\Queries\" />
+    <Folder Include="Features\Auth\UseCases\Commands\" />
+    <Folder Include="Features\Auth\UseCases\Queries\" />
+    <Folder Include="Features\Facebook\Repositories\Queries\" />
+    <Folder Include="Features\Facebook\UseCases\Queries\" />
+    <Folder Include="Features\Instagram\Repositories\Queries\" />
+    <Folder Include="Features\Instagram\UseCases\Commands\" />
+    <Folder Include="Features\Instagram\UseCases\Queries\" />
+    <Folder Include="Features\Notifications\Repositories\Queries\" />
+    <Folder Include="Features\Notifications\UseCases\Commands\" />
+    <Folder Include="Features\Notifications\UseCases\Queries\" />
+    <Folder Include="Features\Posts\Models\" />
+    <Folder Include="Features\Posts\Repositories\Queries\" />
+    <Folder Include="Features\Posts\UseCases\Commands\" />
+    <Folder Include="Features\Posts\UseCases\Queries\" />
+    <Folder Include="Features\Users\Models\" />
+    <Folder Include="Features\Users\Repositories\Queries\" />
+    <Folder Include="Features\Users\UseCases\Commands\" />
+    <Folder Include="Features\Users\UseCases\Queries\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Shared.csproj" />
   </ItemGroup>
 
 </Project>

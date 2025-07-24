@@ -1,9 +1,5 @@
 using Services;
-using Microsoft.Data.SqlClient;
 using Api.Middleware;
-using Data;
-using Infra.Externals.ApiFy.Models;
-using Infra.Externals.ApiFy.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Options;
@@ -11,8 +7,13 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Api.Configuration;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using Core.Repositories;
-using Core.Services;
+using Services.Features.Users.Repositories;
+using Services.Features.Notifications.Repositories;
+using Services.Features.Facebook.Repositories;
+using Services.Features.Instagram.Repositories;
+using Shared.Services;
+using Services.Features.Facebook.Models;
+using Services.Features.Instagram.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 

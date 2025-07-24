@@ -1,4 +1,4 @@
-﻿using Core.Services;
+﻿using Shared.Services;
 
 namespace Api.Workers
 {

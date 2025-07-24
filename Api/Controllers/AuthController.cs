@@ -1,7 +1,7 @@
-using Core.Dtos;
-using Core.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Services.Features.Auth.Models;
+using Shared.Services;
 
 namespace Api.Controllers
 {

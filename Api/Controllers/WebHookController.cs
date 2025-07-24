@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
-using Core.Services;
+using Shared.Services;
 
 namespace Api.Controllers
 {

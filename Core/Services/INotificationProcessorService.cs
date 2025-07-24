@@ -1,4 +1,4 @@
-﻿namespace Core.Services
+﻿namespace Shared.Services
 {
     public interface INotificationProcessorService
     {

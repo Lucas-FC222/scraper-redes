@@ -1,7 +1,4 @@
-using Core.Dtos;
-using Core.Models;
-
-namespace Core.Services
+namespace Shared.Services
 {
     public interface IAuthService
     {

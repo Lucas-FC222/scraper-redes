@@ -1,7 +1,7 @@
-﻿using Core.Models;
-using Core.Repositories;
-using Core.Services;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Services.Features.Facebook.Models;
+using Services.Features.Facebook.Repositories;
+using Shared.Services;
 
 namespace Services
 {
@@ -38,15 +38,7 @@ namespace Services
         /// <returns>RunId do scraper ou null se falhar.</returns>
         public async Task<string?> RunScraperAsync(string pageUrl, int maxPosts)
         {
-            _logger.LogInformation("Executando scraper do Facebook para página: {PageUrl}", pageUrl);
-            var runId = await _crowlerService.RunFacebookScraperAsync(pageUrl, maxPosts);
-            if (string.IsNullOrEmpty(runId))
-            {
-                _logger.LogError("Falha ao iniciar scraper do Facebook");
-                return null;
-            }
-            _logger.LogInformation("Scraper do Facebook iniciado com sucesso. RunId: {RunId}", runId);
-            return runId;
+            
         }
 
         /// <summary>
@@ -56,31 +48,7 @@ namespace Services
         /// <returns>Lista de posts processados.</returns>
         public async Task<IEnumerable<FacebookPost>> ProcessDatasetAsync(string datasetId)
         {
-            _logger.LogInformation("Processando dataset do Facebook: {DatasetId}", datasetId);
-
-            var facebookData = await _crowlerService.ProcessFacebookDatasetAsync(datasetId);
-
-            if (facebookData == null || !facebookData.Posts.Any())
-            {
-                _logger.LogWarning("Nenhum post encontrado no dataset do Facebook: {DatasetId}", datasetId);
-                return Array.Empty<FacebookPost>();
-            }
-
-            // Filtrar duplicatas de Id
-            var postsUnicos = facebookData.Posts
-                .GroupBy(p => p.Id)
-                .Select(g => g.First())
-                .ToList();
-
-            foreach (var post in postsUnicos)
-            {
-                post.Topic = await _postClassifierService.ClassifyPostAsync(post.Message ?? "");
-            }
-
-            await _facebookRepository.SavePostsAsync(postsUnicos);
-            _logger.LogInformation("{Count} posts do Facebook salvos com sucesso", postsUnicos.Count);
-
-            return postsUnicos;
+            
         }
 
         /// <summary>

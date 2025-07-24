@@ -1,13 +1,9 @@
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using BCrypt.Net;
-using Core.Models;
-using Core.Repositories;
-using Core.Services;
-using Core.Dtos;
+using Services.Features.Users.Repositories;
+using Services.Features.Auth.Models;
+using Shared.Services;
 
 namespace Services
 {

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Core.Repositories;
-using Core.Dtos;
+using Shared.Domain.Dtos;
+using Services.Features.Notifications.Repositories;
+using Services.Features.Instagram.Repositories;
 
 namespace Api.Controllers
 {
@@ -64,7 +65,7 @@ namespace Api.Controllers
                     Topic = p.Topic ?? "",
                     SentAt = n.SentAt,
                     IsRead = n.IsRead,
-                    Content = new PostContentDto
+                    Content = new PostContentRequest
                     {
                         Id = p.Id,
                         Text = p.Caption ?? "",
@@ -108,7 +109,7 @@ namespace Api.Controllers
         [HttpPut("preferences")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> UpdateUserPreferences([FromBody] UpdatePreferencesDto request)
+        public async Task<IActionResult> UpdateUserPreferences([FromBody] UpdatePreferencesRequest request)
         {
             // TODO: Pegar userId do token de autenticação quando implementar autenticação
             var userId = TestUserId; // ID do usuário de teste
