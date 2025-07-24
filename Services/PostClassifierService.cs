@@ -3,34 +3,35 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text;
 using Microsoft.Extensions.Configuration;
+using Core.Services;
 
 namespace Services
 {
   public class PostClassifierService : IPostClassifierService
   {
-    private readonly ILogger<PostClassifierService> _logger;
-    private readonly HttpClient _httpClient;
-    private readonly string _apiKey;
+        private readonly ILogger<PostClassifierService> _logger;
+        private readonly HttpClient _httpClient;
+        private readonly string _apiKey;
 
-    public PostClassifierService(ILogger<PostClassifierService> logger, HttpClient httpClient, IConfiguration configuration)
+        public PostClassifierService(ILogger<PostClassifierService> logger, HttpClient httpClient, IConfiguration configuration)
         {
-      _logger = logger;
-      _httpClient = httpClient;
-      _apiKey = configuration["Groq:ApiKey"];
-    }
+            _logger = logger;
+            _httpClient = httpClient;
+            _apiKey = configuration["Groq:ApiKey"] ?? throw new ArgumentNullException(nameof(configuration), "API key cannot be null.");
+        }
 
         public async Task<string> ClassifyPostAsync(string text)
         {
             var prompt = $"Classifique o tema deste post em: esporte, política, tecnologia, entretenimento, outros. Responda apenas com o tema. Post: {text}";
 
-        var requestBody = new
-        {
-            model = "llama-3.3-70b-versatile",
-            messages = new[]
+            var requestBody = new
             {
-                new { role = "user", content = prompt }
-            }
-        };
+                model = "llama-3.3-70b-versatile",
+                messages = new[]
+                {
+                    new { role = "user", content = prompt }
+                }
+            };
 
             var request = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);

@@ -1,10 +1,10 @@
-﻿using Infra.Data;
-using Infra;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using Core.Repositories;
+using Core.Services;
 
 namespace Services
 {
-    public class NotificationProcessor : INotificationProcessor
+    public class NotificationProcessor : INotificationProcessorService
     {
         private readonly INotificationRepository _notifRepo;
         private readonly IInstagramRepository _postRepo;
@@ -54,16 +54,9 @@ namespace Services
 
                 foreach (var post in newPosts)
                 {
-                    try
-                    {
-                        //await _notifier.SendAsync(user, post);
-                        await _notifRepo.MarkNotifiedAsync(user.UserId, post.Id);
-                        _logger.LogInformation("User {Email} notified of post {PostId}", user.Email, post.Id);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError($"Error notifying user {user.Email} about post {post.Id}: {ex}");
-                    }
+                    //await _notifier.SendAsync(user, post);
+                    await _notifRepo.MarkNotifiedAsync(user.UserId, post.Id);
+                    _logger.LogInformation("User {Email} notified of post {PostId}", user.Email, post.Id);
                 }
             }
         }

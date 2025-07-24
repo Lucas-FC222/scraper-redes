@@ -7,13 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Core\Core.csproj" />
-    <ProjectReference Include="..\Infra\Api\Infra.csproj" />
+    <ProjectReference Include="..\..\..\Crowler\Infra\Apis\Infra.Externals.ApiFy.csproj" />
     <ProjectReference Include="..\Infra\Data\Data.csproj" />
   </ItemGroup>
 

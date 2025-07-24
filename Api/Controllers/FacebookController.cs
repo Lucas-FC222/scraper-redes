@@ -1,95 +1,133 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Services;
+using Core.Models;
+using Core.Services;
 
 namespace Api.Controllers
 {
+    /// <summary>
+    /// Controller para operações relacionadas ao Facebook
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
-    public class FacebookController : ControllerBase
+    public class FacebookController : ApiControllerBase
     {
         private readonly IFacebookService _facebookService;
         private readonly ILogger<FacebookController> _logger;
 
+        /// <summary>
+        /// Inicializa uma nova instância do controlador Facebook
+        /// </summary>
+        /// <param name="facebookService">Serviço para operações do Facebook</param>
+        /// <param name="logger">Logger para registro de eventos</param>
         public FacebookController(IFacebookService facebookService, ILogger<FacebookController> logger)
         {
             _facebookService = facebookService;
             _logger = logger;
         }
 
+        /// <summary>
+        /// Inicia o scraper para coletar posts de uma página do Facebook.
+        /// </summary>
+        /// <param name="request">Objeto contendo a URL da página e o número máximo de posts.</param>
+        /// <returns>
+        /// <para><b>200 OK</b>: Scraper iniciado com sucesso, retorna RunId e mensagem.</para>
+        /// <para><b>400 BadRequest</b>: Falha ao iniciar o scraper.</para>
+        /// <para><b>500 InternalServerError</b>: Erro interno do servidor.</para>
+        /// </returns>
         [HttpPost("scraper")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(object))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> RunScraper([FromBody] FacebookScraperRequest request)
         {
-            try
+            _logger.LogInformation("Iniciando scraper do Facebook para página: {PageUrl}", request.PageUrl);
+            
+            var runId = await _facebookService.RunScraperAsync(request.PageUrl, request.MaxPosts);
+            if (string.IsNullOrEmpty(runId))
             {
-                _logger.LogInformation("Iniciando scraper do Facebook para página: {PageUrl}", request.PageUrl);
-                
-                var runId = await _facebookService.RunScraperAsync(request.PageUrl, request.MaxPosts);
-                if (string.IsNullOrEmpty(runId))
-                {
-                    return BadRequest("Falha ao iniciar scraper do Facebook");
-                }
+                return BadRequestResult<object>("Falha ao iniciar scraper do Facebook");
+            }
 
-                return Ok(new { RunId = runId, Message = "Scraper do Facebook iniciado com sucesso" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao executar scraper do Facebook");
-                return StatusCode(500, "Erro interno do servidor");
-            }
+            return Success(new { RunId = runId, Message = "Scraper do Facebook iniciado com sucesso" });
         }
 
+        /// <summary>
+        /// Retorna todos os posts coletados do Facebook.
+        /// </summary>
+        /// <returns>
+        /// <para><b>200 OK</b>: Lista de posts coletados.</para>
+        /// <para><b>500 InternalServerError</b>: Erro interno do servidor.</para>
+        /// </returns>
         [HttpGet("posts")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetAllPosts()
         {
-            try
-            {
-                var posts = await _facebookService.GetAllPostsAsync();
-                return Ok(posts);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao buscar posts do Facebook");
-                return StatusCode(500, "Erro interno do servidor");
-            }
+            var posts = await _facebookService.GetAllPostsAsync();
+            return Success(posts);
         }
 
+        /// <summary>
+        /// Retorna um post específico do Facebook pelo seu ID.
+        /// </summary>
+        /// <param name="id">ID do post.</param>
+        /// <returns>
+        /// <para><b>200 OK</b>: Post encontrado.</para>
+        /// <para><b>404 NotFound</b>: Post não encontrado.</para>
+        /// <para><b>500 InternalServerError</b>: Erro interno do servidor.</para>
+        /// </returns>
         [HttpGet("posts/{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetPostById(string id)
         {
-            try
+            var post = await _facebookService.GetPostByIdAsync(id);
+            if (post == null)
             {
-                var post = await _facebookService.GetPostByIdAsync(id);
-                if (post == null)
-                {
-                    return NotFound();
-                }
-                return Ok(post);
+                return NotFoundResult<FacebookPost>($"Post com ID '{id}' não encontrado");
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao buscar post do Facebook com ID: {Id}", id);
-                return StatusCode(500, "Erro interno do servidor");
-            }
+            return Success(post);
         }
 
+        /// <summary>
+        /// Busca posts do Facebook por palavras-chave.
+        /// </summary>
+        /// <param name="keywords">Palavras-chave separadas por vírgula.</param>
+        /// <returns>
+        /// <para><b>200 OK</b>: Lista de posts que correspondem às palavras-chave.</para>
+        /// <para><b>400 BadRequest</b>: Parâmetro 'keywords' ausente ou inválido.</para>
+        /// </returns>
         [HttpGet("posts/search")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> SearchPostsByKeywords([FromQuery] string keywords)
         {
             if (string.IsNullOrWhiteSpace(keywords))
-                return BadRequest("O parâmetro 'keywords' é obrigatório.");
+                return BadRequestResult<IEnumerable<FacebookPost>>("O parâmetro 'keywords' é obrigatório.");
 
             var keywordsList = keywords.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             if (!keywordsList.Any())
-                return BadRequest("Nenhuma palavra-chave válida informada.");
+                return BadRequestResult<IEnumerable<FacebookPost>>("Nenhuma palavra-chave válida informada.");
 
             var posts = await _facebookService.SearchPostsByKeywordsAsync(keywordsList);
-            return Ok(posts);
+            return Success(posts);
         }
     }
 
+    /// <summary>
+    /// Modelo para requisição de scraper do Facebook
+    /// </summary>
     public class FacebookScraperRequest
     {
+        /// <summary>
+        /// URL da página do Facebook para fazer scraping
+        /// </summary>
         public string PageUrl { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Número máximo de posts a serem coletados
+        /// </summary>
         public int MaxPosts { get; set; }
     }
 }

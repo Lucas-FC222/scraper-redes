@@ -1,4 +1,4 @@
-namespace Workers
+namespace Api.Workers
 {
     public abstract class ScraperWorkerBase<TTarget, TService> : BackgroundService
         where TService : class
@@ -35,21 +35,36 @@ namespace Workers
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                var targets = GetTargets().ToList();
-                if (!targets.Any())
+                try
                 {
-                    _logger.LogWarning("Nenhum alvo configurado para {Worker}", _workerName);
-                }
-                else
-                {
-                    using var scope = _serviceProvider.CreateScope();
-                    var service = scope.ServiceProvider.GetRequiredService<TService>();
-
-                    foreach (var target in targets)
+                    var targets = GetTargets().ToList();
+                    if (!targets.Any())
                     {
-                        await RunScraperAsync(service, target, stoppingToken);
-                        await Task.Delay(TimeSpan.FromSeconds(_delayBetweenTargetsSeconds), stoppingToken);
+                        _logger.LogWarning("Nenhum alvo configurado para {Worker}", _workerName);
                     }
+                    else
+                    {
+                        using var scope = _serviceProvider.CreateScope();
+                        var service = scope.ServiceProvider.GetRequiredService<TService>();
+
+                        foreach (var target in targets)
+                        {
+                            try
+                            {
+                                await RunScraperAsync(service, target, stoppingToken);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Erro ao executar scraper para alvo {Target} em {Worker}", target, _workerName);
+                            }
+
+                            await Task.Delay(TimeSpan.FromSeconds(_delayBetweenTargetsSeconds), stoppingToken);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Erro durante execução do {Worker}", _workerName);
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(_delaySeconds), stoppingToken);

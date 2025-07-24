@@ -1,5 +1,7 @@
-﻿using Infra;
-using Infra.Data;
+﻿using Core.Models;
+using Core.Repositories;
+using Core.Services;
+using Infra.Externals.ApiFy.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace Services
@@ -20,166 +22,91 @@ namespace Services
 
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
-        {
-            try
-            {
-                _logger.LogInformation("Iniciando serviço do Instagram");
-                _logger.LogInformation("Serviço do Instagram executado com sucesso");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao executar serviço do Instagram");
-            }
-        }
-
         public async Task<string?> RunScraperAsync(string username, int limit)
         {
-            try
+            _logger.LogInformation("Executando scraper do Instagram para: {Username}", username);
+            var runId = await _apiFyService.RunInstagramScraperAsync(username, limit);
+            if (string.IsNullOrEmpty(runId))
             {
-                _logger.LogInformation("Executando scraper do Instagram para: {Username}", username);
-                var runId = await _apiFyService.RunInstagramScraperAsync(username, limit);
-                if (string.IsNullOrEmpty(runId))
-                {
-                    _logger.LogError("Falha ao iniciar scraper do Instagram");
-                    return null;
-                }
-                _logger.LogInformation("Scraper do Instagram iniciado com sucesso. RunId: {RunId}", runId);
-                return runId;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao executar scraper do Instagram");
+                _logger.LogError("Falha ao iniciar scraper do Instagram");
                 return null;
             }
+            _logger.LogInformation("Scraper do Instagram iniciado com sucesso. RunId: {RunId}", runId);
+            return runId;
         }
 
-        public async Task<IEnumerable<Core.InstagramPost>> ProcessDatasetAsync(string datasetId)
+        public async Task<IEnumerable<InstagramPost>> ProcessDatasetAsync(string datasetId)
         {
-            try
+            _logger.LogInformation("Processando dataset: {DatasetId}", datasetId);
+            var dataResult = await _apiFyService.ProcessInstagramDatasetAsync(datasetId);
+
+            if (dataResult == null || !dataResult.Posts.Any())
             {
-                _logger.LogInformation("Processando dataset: {DatasetId}", datasetId);
-                var dataResult = await _apiFyService.ProcessInstagramDatasetAsync(datasetId);
-
-                if (dataResult == null || !dataResult.Posts.Any())
-                {
-                    _logger.LogWarning("Nenhum post encontrado no dataset: {DatasetId}", datasetId);
-                    // Retornamos uma lista vazia para indicar que não há nada a processar
-                    return Enumerable.Empty<Core.InstagramPost>();
-                }
-
-                _logger.LogInformation("Classificando {PostsCount} posts", dataResult.Posts.Count());
-                foreach (var post in dataResult.Posts)
-                {
-                    post.Topic = await _postClassifierService.ClassifyPostAsync(post.Caption ?? "");
-                }
-
-                await _instagramRepository.SavePostsAsync(dataResult.Posts);
-
-                if (dataResult.Comments.Any())
-                {
-                    await _instagramRepository.SaveCommentsAsync(dataResult.Comments);
-                }
-
-                if (dataResult.Hashtags.Any())
-                {
-                    await _instagramRepository.SaveHashtagsAsync(dataResult.Hashtags);
-                }
-
-                if (dataResult.Mentions.Any())
-                {
-                    await _instagramRepository.SaveMentionsAsync(dataResult.Mentions);
-                }
-
-                _logger.LogInformation("Todos os dados do dataset {DatasetId} foram processados e salvos.", datasetId);
-                return dataResult.Posts;
+                _logger.LogWarning("Nenhum post encontrado no dataset: {DatasetId}", datasetId);
+                // Retornamos uma lista vazia para indicar que não há nada a processar
+                return Enumerable.Empty<InstagramPost>();
             }
-            catch (Exception ex)
+
+            _logger.LogInformation("Classificando {PostsCount} posts", dataResult.Posts.Count());
+            foreach (var post in dataResult.Posts)
             {
-                // Apenas logamos o erro e o relançamos. O Controller será responsável por tratar.
-                _logger.LogError(ex, "Erro fatal ao processar dataset: {DatasetId}", datasetId);
-                throw;
+                post.Topic = await _postClassifierService.ClassifyPostAsync(post.Caption ?? "");
             }
+
+            await _instagramRepository.SavePostsAsync(dataResult.Posts);
+
+            if (dataResult.Comments.Any())
+            {
+                await _instagramRepository.SaveCommentsAsync(dataResult.Comments);
+            }
+
+            if (dataResult.Hashtags.Any())
+            {
+                await _instagramRepository.SaveHashtagsAsync(dataResult.Hashtags);
+            }
+
+            if (dataResult.Mentions.Any())
+            {
+                await _instagramRepository.SaveMentionsAsync(dataResult.Mentions);
+            }
+
+            _logger.LogInformation("Todos os dados do dataset {DatasetId} foram processados e salvos.", datasetId);
+            return dataResult.Posts;
         }
 
-        public async Task<IEnumerable<Core.InstagramPost>> GetAllPostsAsync()
+        public async Task<IEnumerable<InstagramPost>> GetAllPostsAsync()
         {
-            try
-            {
-                _logger.LogInformation("Buscando todos os posts do Instagram");
-                return await _instagramRepository.GetAllPostsAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao buscar posts do Instagram");
-                return Enumerable.Empty<Core.InstagramPost>().ToList();
-            }
+            _logger.LogInformation("Buscando todos os posts do Instagram");
+            return await _instagramRepository.GetAllPostsAsync();
         }
 
-        public async Task<Core.InstagramPost?> GetPostByIdAsync(string id)
+        public async Task<InstagramPost?> GetPostByIdAsync(string id)
         {
-            try
-            {
-                _logger.LogInformation("Buscando post do Instagram com ID: {Id}", id);
-                return await _instagramRepository.GetPostByIdAsync(id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao buscar post do Instagram com ID: {Id}", id);
-                return null;
-            }
+            _logger.LogInformation("Buscando post do Instagram com ID: {Id}", id);
+            return await _instagramRepository.GetPostByIdAsync(id);
         }
 
-        public async Task<IEnumerable<Core.InstagramComment>> GetCommentsByPostIdAsync(string postId)
+        public async Task<IEnumerable<InstagramComment>> GetCommentsByPostIdAsync(string postId)
         {
-            try
-            {
-                _logger.LogInformation("Buscando comentários do post: {PostId}", postId);
-                return await _instagramRepository.GetCommentsByPostIdAsync(postId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao buscar comentários do post: {PostId}", postId);
-                return Enumerable.Empty<Core.InstagramComment>();
-            }
+            _logger.LogInformation("Buscando comentários do post: {PostId}", postId);
+            return await _instagramRepository.GetCommentsByPostIdAsync(postId);
         }
 
-        public async Task<IEnumerable<Core.InstagramHashtag>> GetHashtagsByPostIdAsync(string postId)
+        public async Task<IEnumerable<InstagramHashtag>> GetHashtagsByPostIdAsync(string postId)
         {
-            try
-            {
-                _logger.LogInformation("Buscando hashtags do post: {PostId}", postId);
-                return await _instagramRepository.GetHashtagsByPostIdAsync(postId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao buscar hashtags do post: {PostId}", postId);
-                return Enumerable.Empty<Core.InstagramHashtag>();
-            }
+            _logger.LogInformation("Buscando hashtags do post: {PostId}", postId);
+            return await _instagramRepository.GetHashtagsByPostIdAsync(postId);
         }
 
-        public async Task<IEnumerable<Core.InstagramMention>> GetMentionsByPostIdAsync(string postId)
+        public async Task<IEnumerable<InstagramMention>> GetMentionsByPostIdAsync(string postId)
         {
-            try
-            {
-                _logger.LogInformation("Buscando menções do post: {PostId}", postId);
-                return await _instagramRepository.GetMentionsByPostIdAsync(postId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Erro ao buscar menções do post: {PostId}", postId);
-                return Enumerable.Empty<Core.InstagramMention>();
-            }
+            _logger.LogInformation("Buscando menções do post: {PostId}", postId);
+            return await _instagramRepository.GetMentionsByPostIdAsync(postId);
         }
 
-        public async Task<IEnumerable<Core.InstagramPost>> SearchPostsByKeywordsAsync(IEnumerable<string> keywords)
+        public async Task<IEnumerable<InstagramPost>> SearchPostsByKeywordsAsync(IEnumerable<string> keywords)
         {
             return await _instagramRepository.SearchPostsByKeywordsAsync(keywords);
-        }
-
-        public Task StopAsync(CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
         }
     }
 }

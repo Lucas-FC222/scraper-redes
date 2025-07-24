@@ -1,9 +1,10 @@
 using Dapper;
-using Core;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
+using Core.Models;
+using Core.Repositories;
 
-namespace Infra.Data
+namespace Data
 {
     public class FacebookRepository : IFacebookRepository
     {
@@ -18,118 +19,88 @@ namespace Infra.Data
 
         public async Task SavePostsAsync(IEnumerable<FacebookPost> posts)
         {
-            try
+            var postsList = posts.ToList();
+            foreach (var post in postsList)
             {
-                var postsList = posts.ToList();
-                foreach (var post in postsList)
-                {
-                    if (post.CreatedAt == default)
-                        post.CreatedAt = DateTime.UtcNow;
-                }
-
-                _logger.LogInformation("Iniciando salvamento de {Count} posts do Facebook no banco de dados", postsList.Count);
-
-                const string sql = @"
-                    INSERT INTO FacebookPosts
-                        (Id, Url, Message, Timestamp, CommentsCount, ReactionsCount, AuthorId, AuthorName, AuthorUrl, AuthorProfilePictureUrl,
-                         Image, Video, AttachedPostUrl, PageUrl, CreatedAt, Topic)
-                    VALUES
-                        (@Id, @Url, @Message, @Timestamp, @CommentsCount, @ReactionsCount, @AuthorId, @AuthorName, @AuthorUrl, @AuthorProfilePictureUrl,
-                         @Image, @Video, @AttachedPostUrl, @PageUrl, @CreatedAt, @Topic)
-                ";
-
-                await _connection.OpenAsync();
-                using var tx = _connection.BeginTransaction();
-                var rowsAffected = await _connection.ExecuteAsync(sql, postsList, transaction: tx);
-                tx.Commit();
-                _logger.LogInformation("Posts do Facebook salvos com sucesso. {RowsAffected} linhas afetadas", rowsAffected);
+                if (post.CreatedAt == default)
+                    post.CreatedAt = DateTime.UtcNow;
             }
-            catch (Exception ex)
+
+            _logger.LogInformation("Iniciando salvamento de {Count} posts do Facebook no banco de dados", postsList.Count);
+
+            const string sql = @"
+                INSERT INTO FacebookPosts
+                    (Id, Url, Message, Timestamp, CommentsCount, ReactionsCount, AuthorId, AuthorName, AuthorUrl, AuthorProfilePictureUrl,
+                     Image, Video, AttachedPostUrl, PageUrl, CreatedAt, Topic)
+                VALUES
+                    (@Id, @Url, @Message, @Timestamp, @CommentsCount, @ReactionsCount, @AuthorId, @AuthorName, @AuthorUrl, @AuthorProfilePictureUrl,
+                     @Image, @Video, @AttachedPostUrl, @PageUrl, @CreatedAt, @Topic)
+            ";
+
+            await _connection.OpenAsync();
+            using var tx = _connection.BeginTransaction();
+            var rowsAffected = await _connection.ExecuteAsync(sql, postsList, transaction: tx);
+            tx.Commit();
+            _logger.LogInformation("Posts do Facebook salvos com sucesso. {RowsAffected} linhas afetadas", rowsAffected);
+            
+            if (_connection.State == System.Data.ConnectionState.Open)
             {
-                _logger.LogError(ex, "Erro ao salvar posts do Facebook no banco de dados");
-                throw;
-            }
-            finally
-            {
-                if (_connection.State == System.Data.ConnectionState.Open)
-                {
-                    await _connection.CloseAsync();
-                }
+                await _connection.CloseAsync();
             }
         }
 
         public async Task<IEnumerable<FacebookPost>> GetAllPostsAsync()
         {
-            try
-            {
-                _logger.LogInformation("Buscando todos os posts do Facebook");
-                
-                const string sql = @"
-                    SELECT Id, Url, Message, Timestamp, CommentsCount, ReactionsCount, AuthorId, AuthorName, AuthorUrl, AuthorProfilePictureUrl,
-                           Image, Video, AttachedPostUrl, PageUrl, CreatedAt, Topic
-                    FROM FacebookPosts
-                    ORDER BY CreatedAt DESC
-                ";
+            _logger.LogInformation("Buscando todos os posts do Facebook");
+            
+            const string sql = @"
+                SELECT Id, Url, Message, Timestamp, CommentsCount, ReactionsCount, AuthorId, AuthorName, AuthorUrl, AuthorProfilePictureUrl,
+                       Image, Video, AttachedPostUrl, PageUrl, CreatedAt, Topic
+                FROM FacebookPosts
+                ORDER BY CreatedAt DESC
+            ";
 
-                await _connection.OpenAsync();
-                var results = await _connection.QueryAsync<FacebookPost>(sql);
-                _logger.LogInformation("Encontrados {Count} posts do Facebook", results.Count());
-                
-                return results;
-            }
-            catch (Exception ex)
+            await _connection.OpenAsync();
+            var results = await _connection.QueryAsync<FacebookPost>(sql);
+            _logger.LogInformation("Encontrados {Count} posts do Facebook", results.Count());
+            
+            if (_connection.State == System.Data.ConnectionState.Open)
             {
-                _logger.LogError(ex, "Erro ao buscar todos os posts do Facebook");
-                throw;
+                await _connection.CloseAsync();
             }
-            finally
-            {
-                if (_connection.State == System.Data.ConnectionState.Open)
-                {
-                    await _connection.CloseAsync();
-                }
-            }
+            
+            return results;
         }
 
         public async Task<FacebookPost?> GetPostByIdAsync(string id)
         {
-            try
-            {
-                _logger.LogInformation("Buscando post do Facebook com ID: {Id}", id);
-                
-                const string sql = @"
-                    SELECT Id, Url, Message, Timestamp, CommentsCount, ReactionsCount, AuthorId, AuthorName, AuthorUrl, AuthorProfilePictureUrl,
-                           Image, Video, AttachedPostUrl, PageUrl, CreatedAt, Topic
-                    FROM FacebookPosts
-                    WHERE Id = @Id
-                ";
+            _logger.LogInformation("Buscando post do Facebook com ID: {Id}", id);
+            
+            const string sql = @"
+                SELECT Id, Url, Message, Timestamp, CommentsCount, ReactionsCount, AuthorId, AuthorName, AuthorUrl, AuthorProfilePictureUrl,
+                       Image, Video, AttachedPostUrl, PageUrl, CreatedAt, Topic
+                FROM FacebookPosts
+                WHERE Id = @Id
+            ";
 
-                await _connection.OpenAsync();
-                var result = await _connection.QueryFirstOrDefaultAsync<FacebookPost>(sql, new { Id = id });
-                
-                if (result != null)
-                {
-                    _logger.LogInformation("Post do Facebook encontrado para ID: {Id}", id);
-                }
-                else
-                {
-                    _logger.LogWarning("Post do Facebook não encontrado para ID: {Id}", id);
-                }
-                
-                return result;
-            }
-            catch (Exception ex)
+            await _connection.OpenAsync();
+            var result = await _connection.QueryFirstOrDefaultAsync<FacebookPost>(sql, new { Id = id });
+            
+            if (result != null)
             {
-                _logger.LogError(ex, "Erro ao buscar post do Facebook com ID: {Id}", id);
-                throw;
+                _logger.LogInformation("Post do Facebook encontrado para ID: {Id}", id);
             }
-            finally
+            else
             {
-                if (_connection.State == System.Data.ConnectionState.Open)
-                {
-                    await _connection.CloseAsync();
-                }
+                _logger.LogWarning("Post do Facebook não encontrado para ID: {Id}", id);
             }
+            
+            if (_connection.State == System.Data.ConnectionState.Open)
+            {
+                await _connection.CloseAsync();
+            }
+            
+            return result;
         }
 
         public async Task<IEnumerable<FacebookPost>> SearchPostsByKeywordsAsync(IEnumerable<string> keywords)
@@ -137,46 +108,37 @@ namespace Infra.Data
             if (keywords == null || !keywords.Any())
                 return Enumerable.Empty<FacebookPost>();
 
-            try
-            {
-                _logger.LogInformation("Buscando posts do Facebook por palavras-chave: {Keywords}", string.Join(", ", keywords));
+            _logger.LogInformation("Buscando posts do Facebook por palavras-chave: {Keywords}", string.Join(", ", keywords));
 
-                // Monta o filtro dinâmico para as palavras-chave
-                var filters = keywords.Select((k, i) => $"LOWER(Message) LIKE @kw{i}").ToList();
-                var whereClause = string.Join(" OR ", filters);
-                var sql = $@"
-                    SELECT Id, Url, Message, Timestamp, CommentsCount, ReactionsCount, AuthorId, AuthorName, AuthorUrl, AuthorProfilePictureUrl,
-                           Image, Video, AttachedPostUrl, PageUrl, CreatedAt
-                    FROM FacebookPosts
-                    WHERE {whereClause}
-                    ORDER BY CreatedAt DESC
-                ";
+            // Monta o filtro dinâmico para as palavras-chave
+            var filters = keywords.Select((k, i) => $"LOWER(Message) LIKE @kw{i}").ToList();
+            var whereClause = string.Join(" OR ", filters);
+            var sql = $@"
+                SELECT Id, Url, Message, Timestamp, CommentsCount, ReactionsCount, AuthorId, AuthorName, AuthorUrl, AuthorProfilePictureUrl,
+                       Image, Video, AttachedPostUrl, PageUrl, CreatedAt
+                FROM FacebookPosts
+                WHERE {whereClause}
+                ORDER BY CreatedAt DESC
+            ";
 
-                var parameters = new DynamicParameters();
-                int idx = 0;
-                foreach (var kw in keywords)
-                {
-                    parameters.Add($"kw{idx}", $"%{kw.ToLower()}%");
-                    idx++;
-                }
+            var parameters = new DynamicParameters();
+            int idx = 0;
+            foreach (var kw in keywords)
+            {
+                parameters.Add($"kw{idx}", $"%{kw.ToLower()}%");
+                idx++;
+            }
 
-                await _connection.OpenAsync();
-                var results = await _connection.QueryAsync<FacebookPost>(sql, parameters);
-                _logger.LogInformation("Encontrados {Count} posts do Facebook por palavras-chave", results.Count());
-                return results;
-            }
-            catch (Exception ex)
+            await _connection.OpenAsync();
+            var results = await _connection.QueryAsync<FacebookPost>(sql, parameters);
+            _logger.LogInformation("Encontrados {Count} posts do Facebook por palavras-chave", results.Count());
+            
+            if (_connection.State == System.Data.ConnectionState.Open)
             {
-                _logger.LogError(ex, "Erro ao buscar posts do Facebook por palavras-chave");
-                throw;
+                await _connection.CloseAsync();
             }
-            finally
-            {
-                if (_connection.State == System.Data.ConnectionState.Open)
-                {
-                    await _connection.CloseAsync();
-                }
-            }
+            
+            return results;
         }
     }
 } 

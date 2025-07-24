@@ -1,9 +1,10 @@
 using Dapper;
-using Core;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
+using Core.Models;
+using Core.Repositories;
 
-namespace Infra.Data
+namespace Data
 {
     public class InstagramRepository : IInstagramRepository
     {
@@ -450,7 +451,7 @@ namespace Infra.Data
                     ORDER BY CreatedAt DESC
                 ";
 
-                var parameters = new Dapper.DynamicParameters();
+                var parameters = new DynamicParameters();
                 int idx = 0;
                 foreach (var kw in keywords)
                 {

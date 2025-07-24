@@ -1,7 +1,6 @@
 ﻿using Core.Services;
-using Services;
 
-namespace Workers
+namespace Api.Workers
 {
     public class NotificationWorker : BackgroundService
     {
@@ -16,7 +15,7 @@ namespace Workers
         {
             _scopeFactory = scopeFactory;
             _logger = logger;
-            _interval = TimeSpan.FromSeconds(cfg.GetValue<int>("Notifications:IntervalSeconds", 60));
+            _interval = TimeSpan.FromSeconds(cfg.GetValue("Notifications:IntervalSeconds", 60));
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -28,7 +27,15 @@ namespace Workers
                 using var scope = _scopeFactory.CreateScope();
                 var processor = scope.ServiceProvider.GetRequiredService<INotificationProcessorService>();
 
-                await processor.RunAsync(stoppingToken);
+                try
+                {
+                    await processor.RunAsync(stoppingToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error in notification processor");
+                }
+
                 await Task.Delay(_interval, stoppingToken);
             }
         }
