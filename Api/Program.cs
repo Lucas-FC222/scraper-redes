@@ -1,5 +1,6 @@
 using Api.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -9,6 +10,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using Microsoft.Data.SqlClient;
 using MediatR;
 using Api.Behaviours;
+using Microsoft.AspNetCore.Routing;
 
 namespace Api
 {
@@ -62,7 +64,7 @@ namespace Api
             //builder.Services.AddHostedService<InstagramWorker>();
             //builder.Services.AddHostedService<NotificationWorker>();
 
-            // CORS - Permitir requisições do frontend
+            // CORS - Permitir requisições de qualquer site
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll", policy =>
@@ -120,6 +122,18 @@ namespace Api
                     // Usar camelCase para propriedades
                     options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
                 });
+                
+            // Registrar explicitamente os controladores a partir de Assembly
+            var controllerAssembly = typeof(Program).Assembly;
+            var controllerTypes = controllerAssembly.GetTypes()
+                .Where(t => typeof(ControllerBase).IsAssignableFrom(t) && !t.IsAbstract)
+                .ToList();
+                
+            Console.WriteLine($"Encontrados {controllerTypes.Count} controllers:");
+            foreach (var type in controllerTypes)
+            {
+                Console.WriteLine($"- {type.Name}");
+            }
 
             // Adicionar versionamento de API
             builder.Services.AddApiVersioning(options =>
@@ -190,20 +204,15 @@ namespace Api
 
             var app = builder.Build();
 
-            // Registrar o middleware de tratamento global de exceções antes de qualquer outro middleware
-            // Exceto para rotas relacionadas ao Swagger
-            app.MapWhen(
-                context => !context.Request.Path.StartsWithSegments("/swagger"),
-                appBuilder => appBuilder.UseGlobalExceptionHandling()
-            );
-
+            // Tratamento de exceções global
+            app.UseExceptionHandler("/error");
+            
+            // Configuração de desenvolvimento
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
-
-                // Obter provedor de descrições de versão
+                
                 var apiVersionDescriptionProvider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
-
                 app.UseSwaggerUI(options =>
                 {
                     // Configurar endpoints para cada versão disponível
@@ -220,26 +229,34 @@ namespace Api
                         // Fallback se não houver descrições de versão
                         options.SwaggerEndpoint("/swagger/v1/swagger.json", "Scraper de Redes Sociais V1");
                     }
-
-                    options.RoutePrefix = "swagger"; // Mantém a rota padrão /swagger
+                    
+                    options.RoutePrefix = "swagger";
                     options.DocumentTitle = "Documentação API - Scraper de Redes Sociais";
-                    options.DefaultModelsExpandDepth(-1); // Oculta a seção de modelos por padrão
-                    options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List); // Expande as operações por padrão
+                    options.DefaultModelsExpandDepth(-1);
+                    options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List);
                     options.EnableDeepLinking();
                     options.DisplayRequestDuration();
                 });
             }
-
+            
             app.UseHttpsRedirection();
-            app.UseStaticFiles(); // Servir arquivos estáticos do wwwroot
-
-            // Usar CORS
+            app.UseStaticFiles();
+            
+            // IMPORTANTE: A ordem correta do pipeline é crítica
+            app.UseRouting();
             app.UseCors("AllowAll");
-
-            // Adicionar middleware de autenticação antes de autorização
+            
             app.UseAuthentication();
             app.UseAuthorization();
+            
+            // Mapear controllers para endpoints
             app.MapControllers();
+
+            // Registrar os endpoints nos logs
+            Console.WriteLine("========== CONFIGURAÇÃO DA API ==========");
+            Console.WriteLine("API iniciada com sucesso!");
+            Console.WriteLine("Swagger disponível em: http://localhost:5149/swagger");
+            Console.WriteLine("=======================================");
 
             app.Run();
         }

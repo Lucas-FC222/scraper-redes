@@ -39,7 +39,7 @@ namespace Services.Features.Notifications.Repositories
         {
             const string sql = @"
                 SELECT UserId, Email, Name
-                FROM AppUsers";
+                FROM Users";
 
             await _connection.OpenAsync();
             var users = await _connection.QueryAsync<AppUser>(sql);
@@ -80,7 +80,7 @@ namespace Services.Features.Notifications.Repositories
         {
             const string sql = @"
                 SELECT COUNT(1)
-                FROM SentNotifications
+                FROM Notifications
                 WHERE UserId = @UserId
                   AND PostId = @PostId";
 
@@ -101,7 +101,7 @@ namespace Services.Features.Notifications.Repositories
         public async Task MarkNotifiedAsync(Guid userId, string postId)
         {
             const string sql = @"
-                INSERT INTO SentNotifications (UserId, PostId)
+                INSERT INTO Notifications (UserId, PostId)
                 VALUES (@UserId, @PostId)";
 
             await _connection.OpenAsync();
@@ -122,7 +122,7 @@ namespace Services.Features.Notifications.Repositories
         {
             const string sql = @"
                     SELECT PostId
-                      FROM SentNotifications
+                      FROM Notifications
                      WHERE UserId = @UserId";
             await _connection.OpenAsync();
             var ids = await _connection.QueryAsync<string>(sql, new { UserId = userId });
@@ -140,7 +140,7 @@ namespace Services.Features.Notifications.Repositories
         {
             var sql = @"
                 SELECT NotificationId, UserId, PostId, SentAt, IsRead
-                FROM SentNotifications
+                FROM Notifications
                 WHERE UserId = @UserId";
 
             if (!includeRead)
@@ -197,7 +197,7 @@ namespace Services.Features.Notifications.Repositories
         public async Task MarkAsReadAsync(Guid userId, Guid notificationId)
         {
             const string sql = @"
-                UPDATE SentNotifications
+                UPDATE Notifications
                 SET IsRead = 1
                 WHERE UserId = @UserId
                 AND NotificationId = @NotificationId";
@@ -217,7 +217,7 @@ namespace Services.Features.Notifications.Repositories
         public async Task MarkAllAsReadAsync(Guid userId)
         {
             const string sql = @"
-                UPDATE SentNotifications
+                UPDATE Notifications
                 SET IsRead = 1
                 WHERE UserId = @UserId
                 AND IsRead = 0";

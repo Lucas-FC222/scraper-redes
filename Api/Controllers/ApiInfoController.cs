@@ -8,8 +8,8 @@ namespace Api.Controllers
     /// Controller responsável por fornecer informações sobre a versão e recursos da API.
     /// </summary>
     [ApiVersion("1.0")]
-    [Route("api/v{version:apiVersion}/versao")]
     [ApiController]
+    [Route("api/v1/info")]
     public class ApiInfoController : ApiControllerBase
     {
         /// <summary>
