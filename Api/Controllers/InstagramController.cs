@@ -1,143 +1,90 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using Services.Features.Instagram.Models;
-using Shared.Services;
+using Shared.Domain.Models;
 
 namespace Api.Controllers
 {
     /// <summary>
-    /// Controller para operações relacionadas ao Instagram
+    /// Controller responsável por operações relacionadas ao Instagram, como scraping e consulta de posts.
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class InstagramController : ApiControllerBase
     {
-        private readonly IInstagramService _instagramService;
-        private readonly ILogger<InstagramController> _logger;
-
         /// <summary>
-        /// Inicializa uma nova instância do controlador Instagram
+        /// Inicializa uma nova instância de <see cref="InstagramController"/>.
         /// </summary>
-        /// <param name="instagramService">Serviço para operações do Instagram</param>
-        /// <param name="logger">Logger para registro de eventos</param>
-        public InstagramController(IInstagramService instagramService, ILogger<InstagramController> logger)
+        /// <param name="mediator">Instância do MediatR injetada.</param>
+        public InstagramController(IMediator mediator) : base(mediator)
         {
-            _instagramService = instagramService;
-            _logger = logger;
         }
 
         /// <summary>
-        /// Inicia o scraper para coletar posts de um usuário do Instagram.
+        /// Executa o scraper para um perfil do Instagram.
         /// </summary>
-        /// <param name="request">Objeto contendo o username e o limite de posts.</param>
-        /// <returns>
-        /// <para><b>200 OK</b>: Scraper iniciado com sucesso, retorna RunId e mensagem.</para>
-        /// <para><b>400 BadRequest</b>: Falha ao iniciar scraper.</para>
-        /// <para><b>500 InternalServerError</b>: Erro interno do servidor.</para>
-        /// </returns>
+        /// <param name="request">Dados para execução do scraper.</param>
+        /// <returns>Resultado da execução do scraper.</returns>
         [HttpPost("scraper")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(object))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> RunScraper([FromBody] InstagramScraperRequest request)
+        [ProducesResponseType(typeof(Result<RunScraperResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Result<RunScraperResponse>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(Result<ProblemDetails>), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> RunScraperAsync([FromBody] RunScraperRequest request)
         {
-            _logger.LogInformation("Iniciando scraper do Instagram para username: {Username}, limite: {Limit}", request.Username, request.Limit);
-            var runId = await _instagramService.RunScraperAsync(request.Username, request.Limit);
-            if (string.IsNullOrEmpty(runId))
-            {
-                return BadRequestResult<object>("Falha ao iniciar scraper do Instagram");
-            }
-            return Success(new { RunId = runId, Message = "Scraper do Instagram iniciado com sucesso" });
+            var result = await _mediator.Send(request);
+            return GetActionResult(result);
         }
 
         /// <summary>
-        /// Modelo para requisição de scraper do Instagram
+        /// Obtém todos os posts do Instagram cadastrados.
         /// </summary>
-        public class InstagramScraperRequest
-        {
-            /// <summary>
-            /// Nome de usuário do Instagram para fazer scraping
-            /// </summary>
-            public string Username { get; set; } = string.Empty;
-            
-            /// <summary>
-            /// Limite de posts a serem coletados
-            /// </summary>
-            public int Limit { get; set; } = 10;
-        }
-
-        /// <summary>
-        /// Retorna todos os posts coletados do Instagram.
-        /// </summary>
-        /// <returns>
-        /// <para><b>200 OK</b>: Lista de posts coletados.</para>
-        /// <para><b>500 InternalServerError</b>: Erro interno do servidor.</para>
-        /// </returns>
+        /// <returns>Lista de posts do Instagram.</returns>
         [HttpGet("posts")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetPosts()
+        [ProducesResponseType(typeof(Result<GetAllPostsResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Result<GetAllPostsResponse>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(Result<ProblemDetails>), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetPostsAsync()
         {
-            _logger.LogInformation("Buscando todos os posts do Instagram");
-            
-            var posts = await _instagramService.GetAllPostsAsync();
-            
-            _logger.LogInformation("Encontrados {Count} posts do Instagram", posts.Count());
-            
-            return Success(posts);
+            var result = await _mediator.Send(new GetAllPostsRequest());
+            return GetActionResult(result);
         }
 
         /// <summary>
-        /// Retorna um post específico do Instagram pelo seu ID.
+        /// Obtém um post do Instagram pelo identificador.
         /// </summary>
-        /// <param name="id">ID do post.</param>
-        /// <returns>
-        /// <para><b>200 OK</b>: Post encontrado.</para>
-        /// <para><b>404 NotFound</b>: Post não encontrado.</para>
-        /// <para><b>500 InternalServerError</b>: Erro interno do servidor.</para>
-        /// </returns>
+        /// <param name="request">Dados para consulta do post por ID.</param>
+        /// <returns>Post do Instagram correspondente ao ID informado.</returns>
         [HttpGet("posts/{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetPostById(string id)
+        [ProducesResponseType(typeof(Result<GetPostByIdResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Result<GetPostByIdResponse>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(Result<ProblemDetails>), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetPostByIdAsync([FromQuery] GetPostByIdRequest request)
         {
-            _logger.LogInformation("Buscando post do Instagram com ID: {Id}", id);
-            
-            var post = await _instagramService.GetPostByIdAsync(id);
-            
-            if (post == null)
-            {
-                _logger.LogWarning("Post não encontrado para ID: {Id}", id);
-                return NotFoundResult<InstagramPost>($"Post com ID {id} não encontrado");
-            }
-
-            _logger.LogInformation("Post encontrado para ID: {Id}", id);
-            
-            return Success(post);
+            var result = await _mediator.Send(request);
+            return GetActionResult(result);
         }
 
         /// <summary>
-        /// Busca posts do Instagram por palavras-chave.
+        /// Pesquisa posts do Instagram por palavras-chave.
         /// </summary>
-        /// <param name="keywords">Palavras-chave separadas por vírgula.</param>
-        /// <returns>
-        /// <para><b>200 OK</b>: Lista de posts que correspondem às palavras-chave.</para>
-        /// <para><b>400 BadRequest</b>: Parâmetro 'keywords' ausente ou inválido.</para>
-        /// </returns>
+        /// <param name="request">Dados para pesquisa de posts por palavras-chave.</param>
+        /// <returns>Lista de posts que correspondem às palavras-chave.</returns>
         [HttpGet("posts/search")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> SearchPostsByKeywords([FromQuery] string keywords)
+        [ProducesResponseType(typeof(Result<SearchPostsByKeywordsResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Result<SearchPostsByKeywordsResponse>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(Result<SearchPostsByKeywordsResponse>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(Result<ProblemDetails>), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> SearchPostsByKeywordsAsync([FromQuery] SearchPostsByKeywordsRequest request)
         {
-            if (string.IsNullOrWhiteSpace(keywords))
-                return BadRequestResult<IEnumerable<InstagramPost>>("O parâmetro 'keywords' é obrigatório.");
+            //if (string.IsNullOrWhiteSpace(keywords))
+            //    return BadRequestResult<IEnumerable<InstagramPost>>("O parâmetro 'keywords' é obrigatório.");
 
-            var keywordsList = keywords.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (!keywordsList.Any())
-                return BadRequestResult<IEnumerable<InstagramPost>>("Nenhuma palavra-chave válida informada.");
+            //var keywordsList = keywords.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            //if (!keywordsList.Any())
+            //    return BadRequestResult<IEnumerable<InstagramPost>>("Nenhuma palavra-chave válida informada.");
 
-            var posts = await _instagramService.SearchPostsByKeywordsAsync(keywordsList);
-            return Success(posts);
+            var result = await _mediator.Send(request);
+            return GetActionResult(result);
         }
     }
 }

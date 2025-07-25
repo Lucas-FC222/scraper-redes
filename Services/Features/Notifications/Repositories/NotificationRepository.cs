@@ -1,22 +1,40 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Dapper;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 using Services.Features.Auth.Models;
 using Services.Features.Notifications.Models;
 
 namespace Services.Features.Notifications.Repositories
 {
+    /// <summary>
+    /// Repositório responsável pelo gerenciamento de notificações e preferências de usuários na base de dados.
+    /// </summary>
     public class NotificationRepository : INotificationRepository
     {
+        /// <summary>
+        /// Conexão com o banco de dados SQL Server.
+        /// </summary>
         private readonly SqlConnection _connection;
+        /// <summary>
+        /// Logger para registro de eventos e erros.
+        /// </summary>
         private readonly ILogger<NotificationRepository> _logger;
 
-        public NotificationRepository(
-            SqlConnection connection,
-            ILogger<NotificationRepository> logger)
+        /// <summary>
+        /// Inicializa uma nova instância de <see cref="NotificationRepository"/>.
+        /// </summary>
+        /// <param name="connection">Conexão SQL para acesso ao banco de dados.</param>
+        /// <param name="logger">Logger para registro de eventos.</param>
+        public NotificationRepository(SqlConnection connection, ILogger<NotificationRepository> logger)
         {
             _connection = connection;
             _logger = logger;
         }
 
+        /// <summary>
+        /// Obtém todos os usuários cadastrados.
+        /// </summary>
+        /// <returns>Coleção de usuários da aplicação.</returns>
         public async Task<IEnumerable<AppUser>> GetAllUsersAsync()
         {
             const string sql = @"
@@ -31,6 +49,11 @@ namespace Services.Features.Notifications.Repositories
             return users;
         }
 
+        /// <summary>
+        /// Obtém as preferências de tópicos de um usuário.
+        /// </summary>
+        /// <param name="userId">Identificador do usuário.</param>
+        /// <returns>Coleção de tópicos de interesse.</returns>
         public async Task<IEnumerable<string>> GetPreferencesAsync(Guid userId)
         {
             const string sql = @"
@@ -47,6 +70,12 @@ namespace Services.Features.Notifications.Repositories
             return topics;
         }
 
+        /// <summary>
+        /// Verifica se o usuário já foi notificado sobre um post.
+        /// </summary>
+        /// <param name="userId">Identificador do usuário.</param>
+        /// <param name="postId">Identificador do post.</param>
+        /// <returns>True se já foi notificado, caso contrário false.</returns>
         public async Task<bool> WasNotifiedAsync(Guid userId, string postId)
         {
             const string sql = @"
@@ -64,6 +93,11 @@ namespace Services.Features.Notifications.Repositories
             return was;
         }
 
+        /// <summary>
+        /// Marca que o usuário foi notificado sobre um post.
+        /// </summary>
+        /// <param name="userId">Identificador do usuário.</param>
+        /// <param name="postId">Identificador do post.</param>
         public async Task MarkNotifiedAsync(Guid userId, string postId)
         {
             const string sql = @"
@@ -71,14 +105,19 @@ namespace Services.Features.Notifications.Repositories
                 VALUES (@UserId, @PostId)";
 
             await _connection.OpenAsync();
-            using var tx = _connection.BeginTransaction();
+            using var tx = await _connection.BeginTransactionAsync();
             await _connection.ExecuteAsync(sql, new { UserId = userId, PostId = postId }, tx);
-            tx.Commit();
+            await tx.CommitAsync();
             await _connection.CloseAsync();
 
             _logger.LogInformation("MarkNotifiedAsync: registro criado para {UserId}/{PostId}", userId, postId);
         }
 
+        /// <summary>
+        /// Obtém os identificadores dos posts para os quais o usuário já foi notificado.
+        /// </summary>
+        /// <param name="userId">Identificador do usuário.</param>
+        /// <returns>Coleção de identificadores de posts notificados.</returns>
         public async Task<IEnumerable<string>> GetNotifiedPostIdsAsync(Guid userId)
         {
             const string sql = @"
@@ -91,6 +130,12 @@ namespace Services.Features.Notifications.Repositories
             return ids;
         }
 
+        /// <summary>
+        /// Obtém as notificações enviadas para um usuário.
+        /// </summary>
+        /// <param name="userId">Identificador do usuário.</param>
+        /// <param name="includeRead">Se true, inclui notificações já lidas.</param>
+        /// <returns>Coleção de notificações enviadas.</returns>
         public async Task<IEnumerable<SentNotification>> GetUserNotificationsAsync(Guid userId, bool includeRead = false)
         {
             var sql = @"
@@ -114,6 +159,11 @@ namespace Services.Features.Notifications.Repositories
             return notifications;
         }
 
+        /// <summary>
+        /// Atualiza as preferências de tópicos de um usuário.
+        /// </summary>
+        /// <param name="userId">Identificador do usuário.</param>
+        /// <param name="topics">Array de tópicos de interesse.</param>
         public async Task UpdatePreferencesAsync(Guid userId, string[] topics)
         {
             const string deleteSql = @"
@@ -125,31 +175,25 @@ namespace Services.Features.Notifications.Repositories
                 VALUES (@UserId, @Topic)";
 
             await _connection.OpenAsync();
-            using var tx = _connection.BeginTransaction();
-            try
-            {
-                await _connection.ExecuteAsync(deleteSql, new { UserId = userId }, tx);
+            using var tx = await _connection.BeginTransactionAsync();
+            await _connection.ExecuteAsync(deleteSql, new { UserId = userId }, tx);
 
-                foreach (var topic in topics)
-                {
-                    await _connection.ExecuteAsync(insertSql, new { UserId = userId, Topic = topic }, tx);
-                }
+            foreach (var topic in topics)
+            {
+                await _connection.ExecuteAsync(insertSql, new { UserId = userId, Topic = topic }, tx);
+            }
 
-                tx.Commit();
-                _logger.LogInformation("UpdatePreferencesAsync({UserId}): atualizados {Count} tópicos",
-                    userId, topics.Length);
-            }
-            catch
-            {
-                tx.Rollback();
-                throw;
-            }
-            finally
-            {
-                await _connection.CloseAsync();
-            }
+            await tx.CommitAsync();
+            _logger.LogInformation("UpdatePreferencesAsync({UserId}): atualizados {Count} tópicos",
+                userId, topics.Length);
+            await _connection.CloseAsync();
         }
 
+        /// <summary>
+        /// Marca uma notificação como lida para um usuário.
+        /// </summary>
+        /// <param name="userId">Identificador do usuário.</param>
+        /// <param name="notificationId">Identificador da notificação.</param>
         public async Task MarkAsReadAsync(Guid userId, Guid notificationId)
         {
             const string sql = @"
@@ -166,6 +210,10 @@ namespace Services.Features.Notifications.Repositories
                 userId, notificationId, affected);
         }
 
+        /// <summary>
+        /// Marca todas as notificações como lidas para um usuário.
+        /// </summary>
+        /// <param name="userId">Identificador do usuário.</param>
         public async Task MarkAllAsReadAsync(Guid userId)
         {
             const string sql = @"

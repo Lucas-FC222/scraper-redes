@@ -6,23 +6,25 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 namespace Api.Configuration
 {
     /// <summary>
-    /// Configura opções do Swagger para API versionada
+    /// Configura opções do Swagger para suportar versionamento de API.
     /// </summary>
     public class ConfigureSwaggerOptions : IConfigureOptions<SwaggerGenOptions>
     {
         private readonly IApiVersionDescriptionProvider _provider;
 
         /// <summary>
-        /// Construtor que recebe o provider de descrição de versão de API
+        /// Inicializa uma nova instância de <see cref="ConfigureSwaggerOptions"/>.
         /// </summary>
+        /// <param name="provider">Provider de descrições de versão da API.</param>
         public ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider)
         {
             _provider = provider;
         }
 
         /// <summary>
-        /// Configura o Swagger para mostrar diferentes versões da API
+        /// Configura o Swagger para exibir diferentes versões da API, adicionando um documento para cada versão descoberta.
         /// </summary>
+        /// <param name="options">Opções de configuração do Swagger.</param>
         public void Configure(SwaggerGenOptions options)
         {
             // Adiciona um documento do Swagger para cada versão descoberta
@@ -34,6 +36,11 @@ namespace Api.Configuration
             }
         }
 
+        /// <summary>
+        /// Cria as informações de exibição do Swagger para uma versão específica da API.
+        /// </summary>
+        /// <param name="description">Descrição da versão da API.</param>
+        /// <returns>Objeto <see cref="OpenApiInfo"/> configurado para a versão.</returns>
         private OpenApiInfo CreateInfoForApiVersion(ApiVersionDescription description)
         {
             var info = new OpenApiInfo()

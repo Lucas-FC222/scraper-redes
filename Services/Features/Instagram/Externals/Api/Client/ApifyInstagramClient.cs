@@ -8,13 +8,34 @@ using System.Text.Json;
 
 namespace Services.Features.Instagram.Externals.Api.Client
 {
+    /// <summary>
+    /// Implementação do cliente responsável por integrar com a API Apify para operações de scraping e processamento de dados do Instagram.
+    /// </summary>
     public class ApifyInstagramClient : IApifyInstagramClient
     {
+        /// <summary>
+        /// Instância de HttpClient utilizada para requisições HTTP à API Apify.
+        /// </summary>
         private readonly HttpClient _httpClient;
+        /// <summary>
+        /// Logger para registro de eventos e informações de execução.
+        /// </summary>
         private readonly ILogger<ApifyInstagramClient> _logger;
+        /// <summary>
+        /// Configurações da Apify injetadas via IOptions.
+        /// </summary>
         private readonly IOptions<Models.ApifySettings> _settings;
+        /// <summary>
+        /// Opções de serialização JSON para desserialização case-insensitive.
+        /// </summary>
         private static readonly JsonSerializerOptions _jsonSerializerOptions = new() { PropertyNameCaseInsensitive = true };
 
+        /// <summary>
+        /// Inicializa uma nova instância de <see cref="ApifyInstagramClient"/>.
+        /// </summary>
+        /// <param name="httpClient">Instância de HttpClient para requisições HTTP.</param>
+        /// <param name="logger">Logger para registro de eventos.</param>
+        /// <param name="settings">Configurações da Apify.</param>
         public ApifyInstagramClient(HttpClient httpClient, ILogger<ApifyInstagramClient> logger, IOptions<Models.ApifySettings> settings)
         {
             _httpClient = httpClient;
@@ -27,7 +48,7 @@ namespace Services.Features.Instagram.Externals.Api.Client
         /// </summary>
         /// <param name="username">Username do Instagram.</param>
         /// <param name="limit">Limite de posts a coletar.</param>
-        /// <returns>RunId do scraper ou string vazia se falhar.</returns>
+        /// <returns>Resultado contendo o RunId do scraper ou erro.</returns>
         public async Task<Result<string>> RunInstagramScraperAsync(string username, int limit)
         {
             _logger.LogInformation("Iniciando scraper do Instagram para username: {Username}, limite: {Limit}", username, limit);
@@ -76,7 +97,7 @@ namespace Services.Features.Instagram.Externals.Api.Client
         /// Processa o dataset do Instagram retornado pela Apify.
         /// </summary>
         /// <param name="datasetId">ID do dataset.</param>
-        /// <returns>Dados do Instagram processados ou null.</returns>
+        /// <returns>Resultado contendo os dados do Instagram processados ou erro.</returns>
         public async Task<Result<InstagramData>> ProcessInstagramDatasetAsync(string datasetId)
         {
             _logger.LogInformation("Iniciando processamento do dataset: {DatasetId}", datasetId);
@@ -136,7 +157,14 @@ namespace Services.Features.Instagram.Externals.Api.Client
             return Result<InstagramData>.Ok(CreateInstagramData(instagramPosts, allComments, allHashtags, allMentions));
         }
 
-
+        /// <summary>
+        /// Cria um objeto InstagramData agregando posts, comentários, hashtags e menções.
+        /// </summary>
+        /// <param name="posts">Lista de posts.</param>
+        /// <param name="comments">Lista de comentários.</param>
+        /// <param name="hashtags">Lista de hashtags.</param>
+        /// <param name="mentions">Lista de menções.</param>
+        /// <returns>Objeto InstagramData agregado.</returns>
         private static InstagramData CreateInstagramData(IEnumerable<InstagramPost> posts, 
             IEnumerable<InstagramComment> comments, 
             IEnumerable<InstagramHashtag> hashtags, 
@@ -151,10 +179,11 @@ namespace Services.Features.Instagram.Externals.Api.Client
             };
         }
 
-
         /// <summary>
         /// Mapeia um ApifyInstagramPost para InstagramPost.
         /// </summary>
+        /// <param name="apifyPost">Objeto ApifyInstagramPost a ser convertido.</param>
+        /// <returns>Objeto InstagramPost correspondente.</returns>
         private static InstagramPost MapToInstagramPost(ApifyInstagramPost apifyPost)
         {
             return JsonSerializer.Deserialize<InstagramPost>(JsonSerializer.Serialize(apifyPost)) ?? new InstagramPost();
@@ -163,25 +192,33 @@ namespace Services.Features.Instagram.Externals.Api.Client
         /// <summary>
         /// Mapeia comentários de um ApifyInstagramPost para uma lista de InstagramComment.
         /// </summary>
+        /// <param name="apifyPost">Objeto ApifyInstagramPost contendo comentários.</param>
+        /// <returns>Lista de comentários do post.</returns>
         private static IEnumerable<InstagramComment> MapToComments(ApifyInstagramPost apifyPost)
         {
-            return apifyPost.LatestComments.Select(comment => JsonSerializer.Deserialize<InstagramComment>(JsonSerializer.Serialize(comment)))!;
+            return apifyPost.LatestComments
+                .Select(comment => JsonSerializer.Deserialize<InstagramComment>(JsonSerializer.Serialize(comment)))
+                .Where(comment => comment != null)!;
         }
 
         /// <summary>
         /// Mapeia hashtags de um ApifyInstagramPost para uma lista de InstagramHashtag.
         /// </summary>
+        /// <param name="apifyPost">Objeto ApifyInstagramPost contendo hashtags.</param>
+        /// <returns>Lista de hashtags do post.</returns>
         private static IEnumerable<InstagramHashtag> MapToHashtags(ApifyInstagramPost apifyPost)
         {
-            return JsonSerializer.Deserialize<IEnumerable<InstagramHashtag>>(JsonSerializer.Serialize(apifyPost)) ?? [];
+            return JsonSerializer.Deserialize<IEnumerable<InstagramHashtag>>(JsonSerializer.Serialize(apifyPost)) ?? Enumerable.Empty<InstagramHashtag>();
         }
 
         /// <summary>
         /// Mapeia menções de um ApifyInstagramPost para uma lista de InstagramMention.
         /// </summary>
+        /// <param name="apifyPost">Objeto ApifyInstagramPost contendo menções.</param>
+        /// <returns>Lista de menções do post.</returns>
         private static IEnumerable<InstagramMention> MapToMentions(ApifyInstagramPost apifyPost)
         {
-            return JsonSerializer.Deserialize<IEnumerable<InstagramMention>>(JsonSerializer.Serialize(apifyPost)) ?? [];
+            return JsonSerializer.Deserialize<IEnumerable<InstagramMention>>(JsonSerializer.Serialize(apifyPost)) ?? Enumerable.Empty<InstagramMention>();
         }
     }
 }

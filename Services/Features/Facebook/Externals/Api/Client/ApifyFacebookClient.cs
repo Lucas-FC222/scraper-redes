@@ -8,12 +8,34 @@ using System.Text.Json;
 
 namespace Services.Features.Facebook.Externals.Api.Client
 {
+    /// <summary>
+    /// Implementação do cliente responsável por integrar com a API Apify para operações de scraping e processamento de dados do Facebook.
+    /// </summary>
     public class ApifyFacebookClient : IApifyFacebookClient
     {
+        /// <summary>
+        /// Instância de HttpClient utilizada para requisições HTTP à API Apify.
+        /// </summary>
         private readonly HttpClient _httpClient;
+        /// <summary>
+        /// Logger para registro de eventos e informações de execução.
+        /// </summary>
         private readonly ILogger<ApifyFacebookClient> _logger;
+        /// <summary>
+        /// Configurações da Apify injetadas via IOptions.
+        /// </summary>
         private readonly IOptions<Models.ApifySettings> _settings;
+        /// <summary>
+        /// Opções de serialização JSON para desserialização case-insensitive.
+        /// </summary>
         private static readonly JsonSerializerOptions _jsonSerializerOptions = new() { PropertyNameCaseInsensitive = true };
+
+        /// <summary>
+        /// Inicializa uma nova instância de <see cref="ApifyFacebookClient"/>.
+        /// </summary>
+        /// <param name="httpClient">Instância de HttpClient para requisições HTTP.</param>
+        /// <param name="logger">Logger para registro de eventos.</param>
+        /// <param name="settings">Configurações da Apify.</param>
         public ApifyFacebookClient(HttpClient httpClient, ILogger<ApifyFacebookClient> logger, IOptions<Models.ApifySettings> settings)
         {
             _httpClient = httpClient;
@@ -26,7 +48,7 @@ namespace Services.Features.Facebook.Externals.Api.Client
         /// </summary>
         /// <param name="pageUrl">URL da página do Facebook.</param>
         /// <param name="maxPosts">Número máximo de posts a coletar.</param>
-        /// <returns>RunId do scraper ou string vazia se falhar.</returns>
+        /// <returns>Resultado contendo o RunId do scraper ou erro.</returns>
         public async Task<Result<string>> RunFacebookScraperAsync(string pageUrl, int maxPosts)
         {
             _logger.LogInformation("Iniciando scraper do Facebook para página: {PageUrl}, limite: {MaxPosts}", pageUrl, maxPosts);
@@ -75,7 +97,7 @@ namespace Services.Features.Facebook.Externals.Api.Client
         /// Processa o dataset do Facebook retornado pela Apify.
         /// </summary>
         /// <param name="datasetId">ID do dataset.</param>
-        /// <returns>Dados do Facebook processados ou null.</returns>
+        /// <returns>Resultado contendo os dados do Facebook processados ou erro.</returns>
         public async Task<Result<FacebookData>> ProcessFacebookDatasetAsync(string datasetId)
         {
             _logger.LogInformation("Iniciando processamento do dataset do Facebook: {DatasetId}", datasetId);
@@ -130,10 +152,11 @@ namespace Services.Features.Facebook.Externals.Api.Client
             return  Result<FacebookData>.Ok(new FacebookData { Posts = facebookPosts });
         }
 
-        // Métodos privados
         /// <summary>
         /// Mapeia um ApifyFacebookPost para FacebookPost.
         /// </summary>
+        /// <param name="apifyPost">Objeto ApifyFacebookPost a ser convertido.</param>
+        /// <returns>Objeto FacebookPost correspondente.</returns>
         private static FacebookPost MapToFacebookPost(ApifyFacebookPost apifyPost)
         {
             return JsonSerializer.Deserialize<FacebookPost>(JsonSerializer.Serialize(apifyPost)) ?? new FacebookPost();

@@ -10,19 +10,28 @@ namespace Api.Workers
         where TService : class
     {
         /// <summary>
-        /// Logger para registro de eventos.
+        /// Logger para registro de eventos. Protegido para uso nas classes derivadas.
         /// </summary>
         protected readonly ILogger _logger;
         /// <summary>
-        /// Provider de serviços para escopo de dependências.
+        /// Provider de serviços para escopo de dependências. Protegido para uso nas classes derivadas.
         /// </summary>
         protected readonly IServiceProvider _serviceProvider;
         /// <summary>
-        /// Configuração da aplicação.
+        /// Configuração da aplicação. Protegido para uso nas classes derivadas.
         /// </summary>
         protected readonly IConfiguration _configuration;
+        /// <summary>
+        /// Nome do worker, utilizado para logs e identificação.
+        /// </summary>
         private readonly string _workerName;
+        /// <summary>
+        /// Intervalo entre execuções completas do ciclo do worker (em segundos).
+        /// </summary>
         private readonly int _delaySeconds;
+        /// <summary>
+        /// Intervalo entre execuções para cada alvo (em segundos).
+        /// </summary>
         private readonly int _delayBetweenTargetsSeconds;
 
         /// <summary>
@@ -34,7 +43,7 @@ namespace Api.Workers
         /// <param name="workerName">Nome do worker.</param>
         /// <param name="delaySeconds">Intervalo entre execuções completas.</param>
         /// <param name="delayBetweenTargetsSeconds">Intervalo entre execuções para cada alvo.</param>
-        protected ScraperWorkerBase(
+        public ScraperWorkerBase(
             ILogger logger,
             IServiceProvider serviceProvider,
             IConfiguration configuration,

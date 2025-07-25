@@ -1,4 +1,5 @@
-using Microsoft.Extensions.Logging;
+using Dapper;
+using Microsoft.Data.SqlClient;
 using Services.Features.Auth.Models;
 
 namespace Services.Features.Users.Repositories
@@ -6,12 +7,21 @@ namespace Services.Features.Users.Repositories
     /// <summary>
     /// Repositório de usuários para operações CRUD e preferências de tópicos.
     /// </summary>
-    public class UserRepository(
-        SqlConnection connection,
-        ILogger<UserRepository> logger) : IUserRepository
+    public class UserRepository : IUserRepository
     {
-        private readonly SqlConnection _connection = connection;
-        private readonly ILogger<UserRepository> _logger = logger;
+        /// <summary>
+        /// Conexão com o banco de dados SQL Server.
+        /// </summary>
+        private readonly SqlConnection _connection;
+
+        /// <summary>
+        /// Inicializa uma nova instância de <see cref="UserRepository"/>.
+        /// </summary>
+        /// <param name="connection">Conexão SQL para acesso ao banco de dados.</param>
+        public UserRepository(SqlConnection connection)
+        {
+            _connection = connection;
+        }
 
         /// <summary>
         /// Cria um novo usuário e suas preferências de tópicos.

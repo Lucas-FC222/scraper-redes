@@ -8,26 +8,22 @@
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="FluentValidation" Version="12.0.0" />
     <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.7" />
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Features\Auth\Externals\" />
     <Folder Include="Features\Auth\Repositories\Queries\" />
-    <Folder Include="Features\Auth\UseCases\Commands\" />
-    <Folder Include="Features\Auth\UseCases\Queries\" />
     <Folder Include="Features\Facebook\Repositories\Queries\" />
-    <Folder Include="Features\Facebook\UseCases\Queries\" />
     <Folder Include="Features\Instagram\Repositories\Queries\" />
-    <Folder Include="Features\Instagram\UseCases\Commands\" />
-    <Folder Include="Features\Instagram\UseCases\Queries\" />
     <Folder Include="Features\Notifications\Repositories\Queries\" />
     <Folder Include="Features\Notifications\UseCases\Commands\" />
     <Folder Include="Features\Notifications\UseCases\Queries\" />
-    <Folder Include="Features\Posts\Models\" />
     <Folder Include="Features\Posts\Repositories\Queries\" />
-    <Folder Include="Features\Posts\UseCases\Commands\" />
     <Folder Include="Features\Posts\UseCases\Queries\" />
     <Folder Include="Features\Users\Models\" />
     <Folder Include="Features\Users\Repositories\Queries\" />

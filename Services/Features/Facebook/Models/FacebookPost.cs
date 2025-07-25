@@ -85,4 +85,4 @@ namespace Services.Features.Facebook.Models
         [Column(TypeName = "datetime2")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
-} 
+}
