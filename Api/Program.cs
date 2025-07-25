@@ -148,6 +148,11 @@ namespace Api
                 {
                     options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
                 }
+                else
+                {
+                    // Log de aviso se o arquivo XML não for encontrado
+                    Console.WriteLine($"AVISO: O arquivo de documentação XML não foi encontrado em {xmlPath}");
+                }
 
                 // Configurar para incluir o versionamento nos endpoints do Swagger
                 options.OperationFilter<SwaggerDefaultValues>();
@@ -166,24 +171,31 @@ namespace Api
 
                 options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
                 {
-        {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-            {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
-                {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
+                    {
+                        new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                        {
+                            Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                            {
+                                Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
                 });
+                
+                // Evitar erros de referência circular na serialização
+                options.CustomSchemaIds(type => type.FullName);
             });
 
             var app = builder.Build();
 
             // Registrar o middleware de tratamento global de exceções antes de qualquer outro middleware
-            app.UseGlobalExceptionHandling();
+            // Exceto para rotas relacionadas ao Swagger
+            app.MapWhen(
+                context => !context.Request.Path.StartsWithSegments("/swagger"),
+                appBuilder => appBuilder.UseGlobalExceptionHandling()
+            );
 
             if (app.Environment.IsDevelopment())
             {
@@ -195,23 +207,26 @@ namespace Api
                 app.UseSwaggerUI(options =>
                 {
                     // Configurar endpoints para cada versão disponível
-                    // Simplified loop using LINQ Select
-                    var swaggerEndpoints = apiVersionDescriptionProvider.ApiVersionDescriptions
-                        .Select(description => new
-                        {
-                            Url = $"/swagger/{description.GroupName}/swagger.json",
-                            Name = $"Scraper de Redes Sociais {description.GroupName.ToUpperInvariant()}"
-                        });
-
-                    foreach (var endpoint in swaggerEndpoints)
+                    if (apiVersionDescriptionProvider.ApiVersionDescriptions.Any())
                     {
-                        options.SwaggerEndpoint(endpoint.Url, endpoint.Name);
+                        foreach (var description in apiVersionDescriptionProvider.ApiVersionDescriptions)
+                        {
+                            options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json",
+                                $"Scraper de Redes Sociais {description.GroupName.ToUpperInvariant()}");
+                        }
+                    }
+                    else
+                    {
+                        // Fallback se não houver descrições de versão
+                        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Scraper de Redes Sociais V1");
                     }
 
                     options.RoutePrefix = "swagger"; // Mantém a rota padrão /swagger
                     options.DocumentTitle = "Documentação API - Scraper de Redes Sociais";
                     options.DefaultModelsExpandDepth(-1); // Oculta a seção de modelos por padrão
                     options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List); // Expande as operações por padrão
+                    options.EnableDeepLinking();
+                    options.DisplayRequestDuration();
                 });
             }
 

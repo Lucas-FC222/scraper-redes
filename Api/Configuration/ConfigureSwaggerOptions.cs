@@ -28,11 +28,24 @@ namespace Api.Configuration
         public void Configure(SwaggerGenOptions options)
         {
             // Adiciona um documento do Swagger para cada versão descoberta
-            foreach (var description in _provider.ApiVersionDescriptions)
+            if (_provider.ApiVersionDescriptions.Any())
             {
-                options.SwaggerDoc(
-                    description.GroupName,
-                    CreateInfoForApiVersion(description));
+                foreach (var description in _provider.ApiVersionDescriptions)
+                {
+                    options.SwaggerDoc(
+                        description.GroupName,
+                        CreateInfoForApiVersion(description));
+                }
+            }
+            else
+            {
+                // Fallback para garantir que pelo menos um documento seja criado
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "API de Scraper de Redes Sociais",
+                    Version = "1.0",
+                    Description = "API para coleta e análise de dados de redes sociais como Facebook e Instagram"
+                });
             }
         }
 

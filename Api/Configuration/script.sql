@@ -1,12 +1,12 @@
 -- Cria o banco de dados se ele ainda não existir
-IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'ScraperRedesDb')
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'CrowlerDB')
 BEGIN
-    CREATE DATABASE [ScraperRedesDb];
+    CREATE DATABASE [CrowlerDB];
 END
 GO
 
 -- Muda o contexto para o banco de dados recém-criado
-USE [ScraperRedesDb];
+USE [CrowlerDB];
 GO
 
 -- Criação da tabela FacebookPosts
@@ -123,24 +123,51 @@ BEGIN
     );
 END
 
-IF OBJECT_ID('dbo.AppUsers', 'U') IS NULL
+IF OBJECT_ID('dbo.Users', 'U') IS NULL
 BEGIN
-    CREATE TABLE [dbo].[AppUsers] (
-  [UserId]   UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-  [Email]    NVARCHAR(200)    NOT NULL,
-  [Name]     NVARCHAR(100)    NOT NULL
+    CREATE TABLE [dbo].[Users] (
+    UserId UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    Email NVARCHAR(255) NOT NULL UNIQUE,
+    Name NVARCHAR(100) NOT NULL,
+    Password NVARCHAR(255) NOT NULL,
+    Role NVARCHAR(20) NOT NULL DEFAULT 'User'
+);
+
+-- Criar um usuário administrador padrão (senha: Admin@123)
+INSERT INTO Users (UserId, Email, Name, Password, Role)
+VALUES (
+    NEWID(), 
+    'admin@example.com', 
+    'Administrador', 
+    -- Nota: Em produção, use um hash adequado em vez de senha em texto puro
+    'AQAAAAEAACcQAAAAEBIoFdlczQaDwfSYrI6DjKkhVU4P5ZHfDnGNhrxu3Y6ehhVl01L+3W+Fe5S7zHZhGg==', 
+    'Admin'
 );
 END
 
-IF OBJECT_ID('dbo.SentNotifications', 'U') IS NULL
+IF OBJECT_ID('dbo.UserTopicPreferences', 'U') IS NULL
 BEGIN
-    CREATE TABLE [dbo].[SentNotifications] (
+CREATE TABLE UserTopicPreferences (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    UserId UNIQUEIDENTIFIER NOT NULL,
+    Topic NVARCHAR(100) NOT NULL,
+    FOREIGN KEY (UserId) REFERENCES Users(UserId)
+);
+
+-- Índice para consultas de preferência
+CREATE INDEX IX_UserTopicPreferences_UserId ON UserTopicPreferences(UserId);
+END
+
+
+IF OBJECT_ID('dbo.Notifications', 'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Notifications] (
         [NotificationId] UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
         [UserId] UNIQUEIDENTIFIER NOT NULL,
         [PostId] NVARCHAR(100) NOT NULL,
         [SentAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
         [IsRead] BIT NOT NULL DEFAULT 0,
-        CONSTRAINT FK_SentNotifications_UserId FOREIGN KEY (UserId) REFERENCES AppUsers(UserId)
+        CONSTRAINT FK_Notifications_UserId FOREIGN KEY (UserId) REFERENCES Users(UserId)
     );
 END
 
@@ -152,6 +179,9 @@ BEGIN
         [Topic] NVARCHAR(100) NOT NULL,
         [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
         CONSTRAINT UC_UserTopic UNIQUE (UserId, Topic),
-        CONSTRAINT FK_UserTopicPreferences_UserId FOREIGN KEY (UserId) REFERENCES AppUsers(UserId)
+        CONSTRAINT FK_UserTopicPreferences_UserId FOREIGN KEY (UserId) REFERENCES Users(UserId)
     );
 END
+
+
+
