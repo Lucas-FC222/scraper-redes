@@ -68,12 +68,15 @@ namespace Services.Features.Instagram.Repositories
 
             if (existingPostIds.Any())
             {
+                await _connection.CloseAsync();
                 _logger.LogInformation("{Count} posts já existem no banco de dados e serão ignorados.", existingPostIds.Count);
+                return;
             }
 
             var newPosts = postsList.Where(p => !existingPostIds.Contains(p.Id)).ToList();
             if (!newPosts.Any())
             {
+                await _connection.CloseAsync();
                 _logger.LogInformation("Nenhum post novo para ser salvo.");
                 return;
             }
@@ -137,7 +140,6 @@ namespace Services.Features.Instagram.Repositories
             }
 
             await _connection.CloseAsync();
-
             return result;
         }
 
@@ -160,13 +162,16 @@ namespace Services.Features.Instagram.Repositories
 
             if (existingCommentIds.Any())
             {
+                await _connection.CloseAsync();
                 _logger.LogInformation("{Count} comentários já existem no banco de dados e serão ignorados.", existingCommentIds.Count);
+                return;
             }
 
             var newComments = commentsList.Where(c => !existingCommentIds.Contains(c.Id)).ToList();
 
             if (!newComments.Any())
             {
+                await _connection.CloseAsync();
                 _logger.LogInformation("Nenhum comentário novo para ser salvo.");
                 return;
             }
@@ -206,6 +211,7 @@ namespace Services.Features.Instagram.Repositories
 
             if (!newHashtags.Any())
             {
+                await _connection.CloseAsync();
                 _logger.LogInformation("Nenhuma hashtag nova para ser salva.");
                 return;
             }
@@ -245,6 +251,7 @@ namespace Services.Features.Instagram.Repositories
 
             if (!newMentions.Any())
             {
+                await _connection.CloseAsync();
                 _logger.LogInformation("Nenhuma menção nova para ser salva.");
                 return;
             }

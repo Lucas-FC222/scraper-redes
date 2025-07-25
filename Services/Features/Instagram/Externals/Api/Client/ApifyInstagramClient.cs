@@ -186,7 +186,38 @@ namespace Services.Features.Instagram.Externals.Api.Client
         /// <returns>Objeto InstagramPost correspondente.</returns>
         private static InstagramPost MapToInstagramPost(ApifyInstagramPost apifyPost)
         {
-            return JsonSerializer.Deserialize<InstagramPost>(JsonSerializer.Serialize(apifyPost)) ?? new InstagramPost();
+            return new InstagramPost
+            {
+                Id = apifyPost.Id,
+                Type = apifyPost.Type,
+                ShortCode = apifyPost.ShortCode,
+                Caption = apifyPost.Caption,
+                Url = apifyPost.Url,
+                CommentsCount = apifyPost.CommentsCount,
+                DimensionsHeight = apifyPost.DimensionsHeight,
+                DimensionsWidth = apifyPost.DimensionsWidth,
+                DisplayUrl = apifyPost.DisplayUrl,
+                Images = JsonSerializer.Serialize(apifyPost.Images),
+                VideoUrl = apifyPost.VideoUrl,
+                Alt = apifyPost.Alt ?? string.Empty,
+                LikesCount = apifyPost.LikesCount,
+                VideoViewCount = apifyPost.VideoViewCount,
+                VideoPlayCount = apifyPost.VideoPlayCount,
+                Timestamp = apifyPost.Timestamp,
+                ChildPosts = JsonSerializer.Serialize(apifyPost.ChildPosts),
+                OwnerFullName = apifyPost.OwnerFullName,
+                OwnerUsername = apifyPost.OwnerUsername,
+                OwnerId = apifyPost.OwnerId,
+                ProductType = apifyPost.ProductType,
+                VideoDuration = apifyPost.VideoDuration,
+                IsSponsored = apifyPost.IsSponsored,
+                TaggedUsers = JsonSerializer.Serialize(apifyPost.TaggedUsers),
+                MusicInfo = apifyPost.MusicInfo != null ? JsonSerializer.Serialize(apifyPost.MusicInfo) : string.Empty,
+                CoauthorProducers = JsonSerializer.Serialize(apifyPost.CoauthorProducers),
+                IsCommentsDisabled = apifyPost.IsCommentsDisabled,
+                InputUrl = apifyPost.InputUrl,
+                CreatedAt = DateTime.UtcNow
+            };
         }
 
         /// <summary>
@@ -196,9 +227,20 @@ namespace Services.Features.Instagram.Externals.Api.Client
         /// <returns>Lista de comentários do post.</returns>
         private static IEnumerable<InstagramComment> MapToComments(ApifyInstagramPost apifyPost)
         {
-            return apifyPost.LatestComments
-                .Select(comment => JsonSerializer.Deserialize<InstagramComment>(JsonSerializer.Serialize(comment)))
-                .Where(comment => comment != null)!;
+            return apifyPost.LatestComments.Select(comment => new InstagramComment
+            {
+                Id = comment.Id,
+                PostId = apifyPost.Id,
+                Text = comment.Text,
+                OwnerUsername = comment.OwnerUsername,
+                OwnerId = comment.Owner?.Id ?? string.Empty,
+                OwnerProfilePicUrl = comment.OwnerProfilePicUrl,
+                Timestamp = comment.Timestamp,
+                RepliesCount = comment.RepliesCount,
+                LikesCount = comment.LikesCount,
+                Replies = JsonSerializer.Serialize(comment.Replies),
+                CreatedAt = DateTime.UtcNow
+            });
         }
 
         /// <summary>
@@ -208,7 +250,12 @@ namespace Services.Features.Instagram.Externals.Api.Client
         /// <returns>Lista de hashtags do post.</returns>
         private static IEnumerable<InstagramHashtag> MapToHashtags(ApifyInstagramPost apifyPost)
         {
-            return JsonSerializer.Deserialize<IEnumerable<InstagramHashtag>>(JsonSerializer.Serialize(apifyPost)) ?? Enumerable.Empty<InstagramHashtag>();
+            return apifyPost.Hashtags.Select(hashtag => new InstagramHashtag
+            {
+                PostId = apifyPost.Id,
+                Hashtag = hashtag,
+                CreatedAt = DateTime.UtcNow
+            });
         }
 
         /// <summary>
@@ -218,7 +265,16 @@ namespace Services.Features.Instagram.Externals.Api.Client
         /// <returns>Lista de menções do post.</returns>
         private static IEnumerable<InstagramMention> MapToMentions(ApifyInstagramPost apifyPost)
         {
-            return JsonSerializer.Deserialize<IEnumerable<InstagramMention>>(JsonSerializer.Serialize(apifyPost)) ?? Enumerable.Empty<InstagramMention>();
+            return apifyPost.TaggedUsers.Select(user => new InstagramMention
+            {
+                PostId = apifyPost.Id,
+                MentionedUsername = user.Username,
+                MentionedUserId = user.Id,
+                MentionedFullName = user.FullName,
+                MentionedProfilePicUrl = user.ProfilePicUrl,
+                IsVerified = user.IsVerified,
+                CreatedAt = DateTime.UtcNow
+            });
         }
     }
 }

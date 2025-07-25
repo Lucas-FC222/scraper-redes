@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Domain.Enums;
 using System.Text.Json;
@@ -9,6 +10,7 @@ namespace Api.Controllers
     /// Controller responsável por receber e processar webhooks de plataformas externas como Facebook e Instagram.
     /// </summary>
     [ApiController]
+    [AllowAnonymous]
     [Route("api/webhook")]
     public class WebHookController : ApiControllerBase
     {

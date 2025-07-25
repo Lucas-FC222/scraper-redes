@@ -95,9 +95,9 @@ namespace Services.Features.Instagram.UseCases.Commands
                 }
 
                 post.Topic = classificationResult?.Data?.Classification!;
-            }
 
-            await _instagramRepository.SavePostsAsync(result.Data.Posts);
+                await _instagramRepository.SavePostsAsync(result.Data.Posts);
+            }
 
             if (result.Data.Comments.Any())
             {
@@ -115,6 +115,7 @@ namespace Services.Features.Instagram.UseCases.Commands
             }
 
             _logger.LogInformation("Todos os dados do dataset {DatasetId} foram processados e salvos.", request.DatasetId);
+            
             return Result<ProcessDatasetResponse>.Ok(new ProcessDatasetResponse() { Posts = result.Data.Posts });
         }
     }
