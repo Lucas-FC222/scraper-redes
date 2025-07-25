@@ -33,7 +33,7 @@ namespace Services.Features.Users.Repositories
             await _connection.OpenAsync();
 
             var sql = @"
-                INSERT INTO AppUsers (UserId, Email, Name, Password, Role)
+                INSERT INTO Users (UserId, Email, Name, Password, Role)
                 VALUES (@UserId, @Email, @Name, @Password, @Role);
             ";
 
@@ -70,7 +70,7 @@ namespace Services.Features.Users.Repositories
             await _connection.ExecuteAsync(deleteTopicsSql, new { UserId = id });
 
             // Depois deletar o usuário
-            var deleteUserSql = "DELETE FROM AppUsers WHERE UserId = @UserId";
+            var deleteUserSql = "DELETE FROM Users WHERE UserId = @UserId";
             await _connection.ExecuteAsync(deleteUserSql, new { UserId = id });
         }
 
@@ -82,10 +82,9 @@ namespace Services.Features.Users.Repositories
         public async Task<bool> ExistsByEmailAsync(string email)
         {
             await _connection.OpenAsync();
-
-            var sql = "SELECT COUNT(1) FROM AppUsers WHERE Email = @Email";
+            var sql = "SELECT COUNT(1) FROM Users WHERE Email = @Email";
             var count = await _connection.ExecuteScalarAsync<int>(sql, new { Email = email });
-
+            await _connection.CloseAsync();
             return count > 0;
         }
 
@@ -96,8 +95,7 @@ namespace Services.Features.Users.Repositories
         public async Task<IEnumerable<AppUser>> GetAllAsync()
         {
             await _connection.OpenAsync();
-
-            var users = await _connection.QueryAsync<AppUser>("SELECT * FROM AppUsers");
+            var users = await _connection.QueryAsync<AppUser>("SELECT * FROM Users");
 
             foreach (var user in users)
             {
@@ -106,7 +104,7 @@ namespace Services.Features.Users.Repositories
                 var topics = await _connection.QueryAsync<string>(topicsSql, new { user.UserId });
                 user.TopicPreferences = [.. topics];
             }
-
+            await _connection.CloseAsync();
             return users;
         }
 
@@ -118,8 +116,7 @@ namespace Services.Features.Users.Repositories
         public async Task<AppUser?> GetByEmailAsync(string email)
         {
             await _connection.OpenAsync();
-
-            var sql = "SELECT * FROM AppUsers WHERE Email = @Email";
+            var sql = "SELECT * FROM Users WHERE Email = @Email";
             var user = await _connection.QueryFirstOrDefaultAsync<AppUser>(sql, new { Email = email });
 
             if (user != null)
@@ -129,7 +126,7 @@ namespace Services.Features.Users.Repositories
                 var topics = await _connection.QueryAsync<string>(topicsSql, new { user.UserId });
                 user.TopicPreferences = [.. topics];
             }
-
+            await _connection.CloseAsync();
             return user;
         }
 
@@ -141,8 +138,7 @@ namespace Services.Features.Users.Repositories
         public async Task<AppUser?> GetByIdAsync(Guid id)
         {
             await _connection.OpenAsync();
-
-            var sql = "SELECT * FROM AppUsers WHERE UserId = @UserId";
+            var sql = "SELECT * FROM Users WHERE UserId = @UserId";
             var user = await _connection.QueryFirstOrDefaultAsync<AppUser>(sql, new { UserId = id });
 
             if (user != null)
@@ -152,7 +148,7 @@ namespace Services.Features.Users.Repositories
                 var topics = await _connection.QueryAsync<string>(topicsSql, new { user.UserId });
                 user.TopicPreferences = [.. topics];
             }
-
+            await _connection.CloseAsync();
             return user;
         }
 
@@ -165,7 +161,7 @@ namespace Services.Features.Users.Repositories
             await _connection.OpenAsync();
 
             var sql = @"
-                UPDATE AppUsers 
+                UPDATE Users 
                 SET Email = @Email, 
                     Name = @Name, 
                     Password = @Password,
@@ -193,6 +189,8 @@ namespace Services.Features.Users.Repositories
                     await _connection.ExecuteAsync(topicSql, new { user.UserId, Topic = topic });
                 }
             }
+
+            await _connection.CloseAsync();
         }
     }
 }
